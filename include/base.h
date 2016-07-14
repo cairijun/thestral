@@ -40,10 +40,10 @@ class TransportBase {
   virtual ~TransportBase() {}
 
   /// Starts an asynchronous reading opeation.
-  virtual void StartRead(const boost::asio::mutable_buffer& buf,
+  virtual void StartRead(const boost::asio::mutable_buffers_1& buf,
                          ReadCallbackType callback) = 0;
   /// Starts an asynchronous writing opeation.
-  virtual void StartWrite(const boost::asio::const_buffer& buf,
+  virtual void StartWrite(const boost::asio::const_buffers_1& buf,
                           WriteCallbackType callback) = 0;
   /// Starts an asynchronous closing opeation.
   virtual void StartClose(CloseCallbackType callback) = 0;
