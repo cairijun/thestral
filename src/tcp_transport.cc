@@ -29,8 +29,12 @@ TcpTransport::TcpTransport(asio::io_service& io_service) : socket_(io_service) {
 }
 
 void TcpTransport::StartRead(const boost::asio::mutable_buffers_1& buf,
-                             ReadCallbackType callback) {
-  boost::asio::async_read(socket_, buf, callback);
+                             ReadCallbackType callback, bool allow_short_read) {
+  if (allow_short_read) {
+    socket_.async_read_some(buf, callback);
+  } else {
+    boost::asio::async_read(socket_, buf, callback);
+  }
 }
 
 void TcpTransport::StartWrite(const boost::asio::const_buffers_1& buf,

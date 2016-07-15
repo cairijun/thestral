@@ -40,8 +40,11 @@ class TransportBase {
   virtual ~TransportBase() {}
 
   /// Starts an asynchronous reading opeation.
+  /// @param allow_short_read If true, the operation may complete before the
+  /// buffer is full.
   virtual void StartRead(const boost::asio::mutable_buffers_1& buf,
-                         ReadCallbackType callback) = 0;
+                         ReadCallbackType callback,
+                         bool allow_short_read = false) = 0;
   /// Starts an asynchronous writing opeation.
   virtual void StartWrite(const boost::asio::const_buffers_1& buf,
                           WriteCallbackType callback) = 0;
@@ -50,15 +53,19 @@ class TransportBase {
 
   /// Convenience function for constructing and reading into a buffer.
   template <typename T>
-  void StartRead(T&& data, ReadCallbackType callback) {
-    StartRead(boost::asio::buffer(std::forward<T>(data)), callback);
+  void StartRead(T&& data, ReadCallbackType callback,
+                 bool allow_short_read = false) {
+    StartRead(boost::asio::buffer(std::forward<T>(data)), callback,
+              allow_short_read);
   }
 
   /// Convenience function for constructing and reading into a buffer of
   /// specific size
   template <typename T>
-  void StartRead(T&& data, std::size_t size, ReadCallbackType callback) {
-    StartRead(boost::asio::buffer(std::forward<T>(data), size), callback);
+  void StartRead(T&& data, std::size_t size, ReadCallbackType callback,
+                 bool allow_short_read = false) {
+    StartRead(boost::asio::buffer(std::forward<T>(data), size), callback,
+              allow_short_read);
   }
 
   /// Convenience function for constructing and writing from a buffer.

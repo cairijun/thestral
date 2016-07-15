@@ -31,7 +31,8 @@ class TcpTransport : public TransportBase {
 
  public:
   void StartRead(const boost::asio::mutable_buffers_1& buf,
-                 ReadCallbackType callback) override;
+                 ReadCallbackType callback,
+                 bool allow_short_read = false) override;
   void StartWrite(const boost::asio::const_buffers_1& buf,
                   WriteCallbackType callback) override;
   void StartClose(CloseCallbackType callback) override;
