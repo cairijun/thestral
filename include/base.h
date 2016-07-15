@@ -84,20 +84,14 @@ class TransportBase {
 
 /// Base class of transport factories. The transport factory creates Transport
 /// objects via asynchronously accepting or connecting to remote peers.
-/// @tparam Transport Type of transports to create. Must be a subclass of
-/// TransportBase.
 /// @tparam Endpoint Type of endpoints when accepting or connecting.
-template <typename Transport, typename Endpoint>
+template <typename Endpoint>
 class TransportFactoryBase {
-  static_assert(std::is_base_of<TransportBase, Transport>::value,
-                "Transport must inherit TransportBase");
-
  public:
-  typedef Transport TransportType;
   typedef Endpoint EndpointType;
-  typedef std::function<bool(std::shared_ptr<Transport>, const ec_type&)>
+  typedef std::function<bool(std::shared_ptr<TransportBase>, const ec_type&)>
       AcceptCallbackType;
-  typedef std::function<void(std::shared_ptr<Transport>, const ec_type&)>
+  typedef std::function<void(std::shared_ptr<TransportBase>, const ec_type&)>
       ConnectCallbackType;
 
   virtual ~TransportFactoryBase() {}
@@ -114,18 +108,12 @@ class TransportFactoryBase {
 /// Base class of upstream transport factories. The upstream transport factory
 /// understands the upstream protocol, and can requests the upstream to
 /// establish connections to target endpoints.
-/// @tparam Transport Type of transports to create. Must be a subclass of
-/// TransportBase.
 /// @tparam Endpoint Type of endpoints when requesting.
-template <typename Transport, typename Endpoint>
+template <typename Endpoint>
 class UpstreamFactoryBase {
-  static_assert(std::is_base_of<TransportBase, Transport>::value,
-                "Transport must inherit TransportBase");
-
  public:
-  typedef Transport TransportType;
   typedef Endpoint EndpointType;
-  typedef std::function<void(std::shared_ptr<Transport>, const ec_type&)>
+  typedef std::function<void(std::shared_ptr<TransportBase>, const ec_type&)>
       RequestCallbackType;
 
   virtual ~UpstreamFactoryBase() {}

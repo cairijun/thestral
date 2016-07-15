@@ -45,8 +45,7 @@ class TcpTransport : public TransportBase {
 
 /// Transport factory for TcpTransport.
 class TcpTransportFactory
-    : public TransportFactoryBase<TcpTransport,
-                                  boost::asio::ip::tcp::endpoint> {
+    : public TransportFactoryBase<boost::asio::ip::tcp::endpoint> {
  public:
   explicit TcpTransportFactory(
       const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
