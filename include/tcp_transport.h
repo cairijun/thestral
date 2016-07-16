@@ -45,18 +45,39 @@ class TcpTransport : public TransportBase {
 
 /// Transport factory for TcpTransport.
 class TcpTransportFactory
-    : public TransportFactoryBase<boost::asio::ip::tcp::endpoint> {
+    : public TransportFactoryBase<boost::asio::ip::tcp::endpoint>,
+      public std::enable_shared_from_this<TcpTransportFactory> {
  public:
-  explicit TcpTransportFactory(
-      const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
-      : io_service_ptr_(io_service_ptr) {}
+  TcpTransportFactory(const TcpTransportFactory&) = delete;
+  TcpTransportFactory& operator=(const TcpTransportFactory&) = delete;
+
+  static std::shared_ptr<TcpTransportFactory> New(
+      const std::shared_ptr<boost::asio::io_service>& io_service_ptr) {
+    return std::make_shared<TcpTransportFactory>(io_service_ptr);
+  }
 
   void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
   void StartConnect(EndpointType endpoint,
                     ConnectCallbackType callback) override;
 
+  /// Synchronously tries connecting to a remote peer with a set of endpoints.
+  template <typename Iter>
+  std::shared_ptr<TransportBase> TryConnect(Iter& iter, ec_type& error_code) {
+    std::shared_ptr<TcpTransport> transport(new TcpTransport(*io_service_ptr_));
+    iter = boost::asio::connect(transport->socket_, iter, error_code);
+    return transport;
+  }
+
+  std::shared_ptr<boost::asio::io_service> get_io_service_ptr_() const {
+    return io_service_ptr_;
+  }
+
  private:
   const std::shared_ptr<boost::asio::io_service> io_service_ptr_;
+
+  explicit TcpTransportFactory(
+      const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
+      : io_service_ptr_(io_service_ptr) {}
 
   void DoAccept(const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
                 AcceptCallbackType callback);

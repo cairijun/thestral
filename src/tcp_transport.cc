@@ -66,16 +66,19 @@ void TcpTransportFactory::StartConnect(EndpointType endpoint,
                                        ConnectCallbackType callback) {
   std::shared_ptr<TcpTransport> transport(new TcpTransport(*io_service_ptr_));
   transport->socket_.async_connect(
-      endpoint, std::bind(callback, transport, std::placeholders::_1));
+      endpoint, std::bind(callback, std::placeholders::_1, transport));
 }
 
 void TcpTransportFactory::DoAccept(
     const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
     AcceptCallbackType callback) {
   std::shared_ptr<TcpTransport> transport(new TcpTransport(*io_service_ptr_));
-  acceptor->async_accept(transport->socket_, [=](const ec_type& ec) {
-    if (callback(transport, ec)) {
-      DoAccept(acceptor, callback);  // recursively accept more connections
+  auto self = shared_from_this();
+  acceptor->async_accept(transport->socket_, [self, acceptor, callback,
+                                              transport](const ec_type& ec) {
+    if (callback(ec, transport)) {
+      // recursively accept more connections
+      self->DoAccept(acceptor, callback);
     }
   });
 }
