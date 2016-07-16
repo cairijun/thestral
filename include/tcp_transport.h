@@ -53,7 +53,8 @@ class TcpTransportFactory
 
   static std::shared_ptr<TcpTransportFactory> New(
       const std::shared_ptr<boost::asio::io_service>& io_service_ptr) {
-    return std::make_shared<TcpTransportFactory>(io_service_ptr);
+    return std::shared_ptr<TcpTransportFactory>(
+        new TcpTransportFactory(io_service_ptr));
   }
 
   void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;

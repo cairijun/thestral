@@ -17,8 +17,10 @@
 #ifndef THESTRAL_BASE_H_
 #define THESTRAL_BASE_H_
 
+#include <array>
 #include <functional>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -80,6 +82,10 @@ class TransportBase {
   void StartWrite(T&& data, std::size_t size, WriteCallbackType callback) {
     StartWrite(boost::asio::buffer(std::forward<T>(data), size), callback);
   }
+
+  virtual void StartClose() {
+    StartClose([](const ec_type&) {});
+  }
 };
 
 /// Base class of transport factories. The transport factory creates Transport
@@ -89,9 +95,9 @@ template <typename Endpoint>
 class TransportFactoryBase {
  public:
   typedef Endpoint EndpointType;
-  typedef std::function<bool(std::shared_ptr<TransportBase>, const ec_type&)>
+  typedef std::function<bool(const ec_type&, std::shared_ptr<TransportBase>)>
       AcceptCallbackType;
-  typedef std::function<void(std::shared_ptr<TransportBase>, const ec_type&)>
+  typedef std::function<void(const ec_type&, std::shared_ptr<TransportBase>)>
       ConnectCallbackType;
 
   virtual ~TransportFactoryBase() {}
@@ -113,14 +119,14 @@ template <typename Endpoint>
 class UpstreamFactoryBase {
  public:
   typedef Endpoint EndpointType;
-  typedef std::function<void(std::shared_ptr<TransportBase>, const ec_type&)>
+  typedef std::function<void(const ec_type&, std::shared_ptr<TransportBase>)>
       RequestCallbackType;
 
   virtual ~UpstreamFactoryBase() {}
 
   /// Requests the upstream to establish a connection to a specific endpoint
   /// asynchronously.
-  virtual void StartRequest(Endpoint endpoint,
+  virtual void StartRequest(const Endpoint& endpoint,
                             RequestCallbackType callback) = 0;
 };
 
@@ -133,6 +139,120 @@ class ServerBase {
   /// Starts the server.
   virtual void Start() = 0;
 };
+
+/// Base class of transferable packet classes. As a convention, a subclass
+/// should implement a static asynchronous creation function as follows.
+/// ```cpp
+/// typedef std::function<void(const ec_type&, PacketType)> CreateCallbackType;
+/// static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
+///                             CreateCallbackType callback);
+/// ```
+class PacketBase {
+ public:
+  /// Writes the packet into the transport object asynchronously. The default
+  /// implementation writes the bytes returned by ToString().
+  virtual void StartWriteTo(std::shared_ptr<TransportBase> transport,
+                            TransportBase::WriteCallbackType callback) const;
+  /// Checks the correctness of the fields of the packet. The default
+  /// implementation always returns `true`.
+  virtual bool Validate() const { return true; }
+  /// Returns a string representation of the packet.
+  virtual std::string ToString() const = 0;
+};
+
+/// Class template for packets with two consecutive parts, a header and a body.
+template <typename Header, typename Body>
+struct PacketWithHeader : PacketBase {
+  static_assert(std::is_base_of<PacketBase, Header>::value,
+                "Header must inherit PacketBase");
+  static_assert(std::is_base_of<PacketBase, Body>::value,
+                "Body must inherit PacketBase");
+
+  typedef std::function<void(const ec_type&, PacketWithHeader<Header, Body>)>
+      CreateCallbackType;
+
+  Header header;  ///< The header part of the whole packet.
+  Body body;      ///< The body part of the whole packet.
+
+  static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
+                              CreateCallbackType callback);
+
+  bool Validate() const override;
+  std::string ToString() const override;
+};
+
+template <typename Header, typename Body>
+bool PacketWithHeader<Header, Body>::Validate() const {
+  return header.Validate() && body.Validate();
+}
+
+template <typename Header, typename Body>
+void PacketWithHeader<Header, Body>::StartCreateFrom(
+    std::shared_ptr<TransportBase> transport, CreateCallbackType callback) {
+  Header::StartCreateFrom(
+      transport, [transport, callback](const ec_type& ec, Header header) {
+        if (ec) {
+          callback(ec, PacketWithHeader<Header, Body>());
+          return;
+        }
+        Body::StartCreateFrom(transport, [header, transport, callback](
+                                             const ec_type& ec, Body body) {
+          if (ec) {
+            callback(ec, PacketWithHeader<Header, Body>());
+          } else {
+            PacketWithHeader<Header, Body> packet;
+            packet.header = header;
+            packet.body = body;
+          }
+        });
+      });
+}
+
+template <typename Header, typename Body>
+std::string PacketWithHeader<Header, Body>::ToString() const {
+  return header.ToString() + body.ToString();
+}
+
+/// Class template for fixed size packet. The subclasses only need to implement
+/// ToBytes() and FromBytes().
+/// @tparam PacketType The type of the subclass. It is used to generate to
+/// static creation function.
+/// @tparam N The size of the packet in bytes.
+template <typename PacketType, size_t N>
+class PacketWithSize : public PacketBase {
+ public:
+  typedef std::function<void(const ec_type&, PacketType)> CreateCallbackType;
+
+  static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
+                              CreateCallbackType callback);
+
+  std::string ToString() const override;
+  /// Writes the bytes representation to a pre-allocated memory area.
+  virtual void ToBytes(char* data) const = 0;
+  /// Fills the packet fields from bytes.
+  virtual void FromBytes(const char* data) = 0;
+};
+
+template <typename PacketType, size_t N>
+void PacketWithSize<PacketType, N>::StartCreateFrom(
+    std::shared_ptr<TransportBase> transport, CreateCallbackType callback) {
+  auto data = std::make_shared<std::array<char, N>>();
+  transport->StartRead(
+      *data, [callback, data](const ec_type& error_code, size_t bytes_read) {
+        PacketType packet;
+        if (!error_code) {
+          packet.FromBytes(data->data());
+        }
+        callback(error_code, packet);
+      });
+}
+
+template <typename PacketType, size_t N>
+std::string PacketWithSize<PacketType, N>::ToString() const {
+  std::string data(N, '\0');
+  ToBytes(&data[0]);
+  return data;
+}
 
 }  // namespace thestral
 
