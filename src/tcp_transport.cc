@@ -28,6 +28,34 @@ TcpTransport::TcpTransport(asio::io_service& io_service) : socket_(io_service) {
   socket_.set_option(ip::tcp::socket::reuse_address(true));
 }
 
+Address TcpTransport::GetLocalAddress() const {
+  ec_type ec;
+  auto endpoint = socket_.local_endpoint(ec);
+  Address address;
+
+  if (ec) {
+    // TODO(richardtsai): better way to indicate error?
+    address.type = static_cast<AddressType>(0xff);  // invalid address
+  } else {
+    auto asio_addr = endpoint.address();
+    if (asio_addr.is_v4()) {
+      auto asio_addr_bytes = asio_addr.to_v4().to_bytes();
+      address.type = AddressType::kIPv4;
+      address.host.assign(asio_addr_bytes.cbegin(), asio_addr_bytes.cend());
+      address.port = endpoint.port();
+    } else if (asio_addr.is_v6()) {
+      auto asio_addr_bytes = asio_addr.to_v6().to_bytes();
+      address.type = AddressType::kIPv6;
+      address.host.assign(asio_addr_bytes.cbegin(), asio_addr_bytes.cend());
+      address.port = endpoint.port();
+    } else {
+      address.type = static_cast<AddressType>(0xff);  // invalid address
+    }
+  }
+
+  return address;
+}
+
 void TcpTransport::StartRead(const boost::asio::mutable_buffers_1& buf,
                              ReadCallbackType callback, bool allow_short_read) {
   if (allow_short_read) {

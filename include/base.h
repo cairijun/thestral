@@ -26,6 +26,8 @@
 
 #include <boost/asio.hpp>
 
+#include "common.h"
+
 namespace thestral {
 
 typedef boost::system::error_code ec_type;
@@ -41,6 +43,8 @@ class TransportBase {
 
   virtual ~TransportBase() {}
 
+  /// Returns the bound local address of the transport.
+  virtual Address GetLocalAddress() const = 0;
   /// Starts an asynchronous reading opeation.
   /// @param allow_short_read If true, the operation may complete before the
   /// buffer is full.
@@ -109,16 +113,17 @@ class TransportFactoryBase {
   /// Connects to a specific endpoint asynchronous.
   virtual void StartConnect(Endpoint endpoint,
                             ConnectCallbackType callback) = 0;
+
+  /// Returns a pointer to the `io_service` bound with this factory.
+  virtual std::shared_ptr<boost::asio::io_service> get_io_service_ptr()
+      const = 0;
 };
 
 /// Base class of upstream transport factories. The upstream transport factory
 /// understands the upstream protocol, and can requests the upstream to
 /// establish connections to target endpoints.
-/// @tparam Endpoint Type of endpoints when requesting.
-template <typename Endpoint>
 class UpstreamFactoryBase {
  public:
-  typedef Endpoint EndpointType;
   typedef std::function<void(const ec_type&, std::shared_ptr<TransportBase>)>
       RequestCallbackType;
 
@@ -126,8 +131,12 @@ class UpstreamFactoryBase {
 
   /// Requests the upstream to establish a connection to a specific endpoint
   /// asynchronously.
-  virtual void StartRequest(const Endpoint& endpoint,
+  virtual void StartRequest(const Address& endpoint,
                             RequestCallbackType callback) = 0;
+
+  /// Returns a pointer to the `io_service` bound with this factory.
+  virtual std::shared_ptr<boost::asio::io_service> get_io_service_ptr()
+      const = 0;
 };
 
 /// Base class of servers. The server understands the downstream protocol.

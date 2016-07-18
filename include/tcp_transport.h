@@ -22,6 +22,7 @@
 #include <boost/asio.hpp>
 
 #include "base.h"
+#include "common.h"
 
 namespace thestral {
 
@@ -30,6 +31,7 @@ class TcpTransport : public TransportBase {
   friend class TcpTransportFactory;
 
  public:
+  Address GetLocalAddress() const override;
   void StartRead(const boost::asio::mutable_buffers_1& buf,
                  ReadCallbackType callback,
                  bool allow_short_read = false) override;
@@ -69,7 +71,7 @@ class TcpTransportFactory
     return transport;
   }
 
-  std::shared_ptr<boost::asio::io_service> get_io_service_ptr_() const {
+  std::shared_ptr<boost::asio::io_service> get_io_service_ptr() const override {
     return io_service_ptr_;
   }
 

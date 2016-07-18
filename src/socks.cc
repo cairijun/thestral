@@ -48,9 +48,20 @@ std::string AuthMethodList::ToString() const {
   return str;
 }
 
-void Address::StartCreateFrom(std::shared_ptr<TransportBase> transport,
-                              CreateCallbackType callback) {
-  auto packet = std::make_shared<Address>();
+SocksAddress::SocksAddress(const Address& address) : Address(address) {}
+
+SocksAddress& SocksAddress::operator=(const Address& address) {
+  if (this != &address) {
+    this->type = address.type;
+    this->host = address.host;
+    this->port = address.port;
+  }
+  return *this;
+}
+
+void SocksAddress::StartCreateFrom(std::shared_ptr<TransportBase> transport,
+                                   CreateCallbackType callback) {
+  auto packet = std::make_shared<SocksAddress>();
 
   transport->StartRead(
       &packet->type, 1,
@@ -87,13 +98,15 @@ void Address::StartCreateFrom(std::shared_ptr<TransportBase> transport,
           case AddressType::kDomainName:
             StartReadDomain(std::move(packet), transport, callback);
             break;
+          default:  // Unknown address type, which should be handled outside.
+            break;
         }
       });
 }
 
-void Address::StartReadDomain(std::shared_ptr<Address> packet,
-                              std::shared_ptr<TransportBase> transport,
-                              CreateCallbackType callback) {
+void SocksAddress::StartReadDomain(std::shared_ptr<SocksAddress> packet,
+                                   std::shared_ptr<TransportBase> transport,
+                                   CreateCallbackType callback) {
   // use the first byte of this->host to temporarily store the length
   packet->host.resize(1);
   transport->StartRead(&packet->host[0], 1, [packet, transport, callback](
@@ -115,13 +128,13 @@ void Address::StartReadDomain(std::shared_ptr<Address> packet,
   });
 }
 
-void Address::ExtractPortFromHost() {
+void SocksAddress::ExtractPortFromHost() {
   port = static_cast<uint8_t>(host[host.size() - 2]) << 8;
   port |= static_cast<uint8_t>(host.back());
   host.resize(host.size() - 2);
 }
 
-std::string Address::ToString() const {
+std::string SocksAddress::ToString() const {
   std::string str{static_cast<char>(type)};
   if (type == AddressType::kDomainName) {
     // TODO: check host length

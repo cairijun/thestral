@@ -23,6 +23,7 @@
 
 #include <boost/asio.hpp>
 
+#include "common.h"
 #include "base.h"
 
 namespace thestral {
@@ -34,13 +35,6 @@ enum class Command : uint8_t {
   kConnect = 0x1,
   kBind = 0x2,
   kUdpAssociate = 0x3,
-};
-
-/// Address type supported by SOCKS protocol.
-enum class AddressType : uint8_t {
-  kIPv4 = 0x1,
-  kDomainName = 0x3,
-  kIPv6 = 0x4,
 };
 
 enum class ResponseCode : uint8_t {
@@ -118,12 +112,12 @@ struct ResponseHeader : PacketWithSize<ResponseHeader, 3> {
 };
 
 /// Request address supported by SOCKS protocol.
-struct Address : PacketBase {
-  typedef std::function<void(const ec_type&, Address)> CreateCallbackType;
+struct SocksAddress : Address, PacketBase {
+  typedef std::function<void(const ec_type&, SocksAddress)> CreateCallbackType;
 
-  AddressType type;  ///< Type of the address
-  std::string host;  ///< Host string of the address
-  uint16_t port;     ///< Port number of the address
+  SocksAddress() = default;
+  explicit SocksAddress(const Address& address);
+  SocksAddress& operator=(const Address& address);
 
   static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
                               CreateCallbackType callback);
@@ -131,14 +125,14 @@ struct Address : PacketBase {
   std::string ToString() const override;
 
  private:
-  static void StartReadDomain(std::shared_ptr<Address> packet,
+  static void StartReadDomain(std::shared_ptr<SocksAddress> packet,
                               std::shared_ptr<TransportBase> transport,
                               CreateCallbackType callback);
   void ExtractPortFromHost();
 };
 
-typedef PacketWithHeader<RequestHeader, Address> RequestPacket;
-typedef PacketWithHeader<ResponseHeader, Address> ResponsePacket;
+typedef PacketWithHeader<RequestHeader, SocksAddress> RequestPacket;
+typedef PacketWithHeader<ResponseHeader, SocksAddress> ResponsePacket;
 
 }  // namespace socks
 }  // namespace thestral
