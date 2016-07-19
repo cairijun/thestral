@@ -33,7 +33,7 @@
 namespace thestral {
 namespace socks {
 
-namespace detail {
+namespace impl {
 
 /// A wrapper around a transport pointer, overriding
 /// TransportBase::GetLocalAddress() to return a specified address.
@@ -68,7 +68,7 @@ class SocksTransportWrapper : public TransportBase {
   const Address bound_address_;
 };
 
-}  // namespace detail
+}  // namespace impl
 
 /// Upstream factory for the TCP part of SOCKS protocol.
 class SocksTcpUpstreamFactory
@@ -84,16 +84,6 @@ class SocksTcpUpstreamFactory
       const std::string& upstream_host, uint16_t upstream_port) {
     return std::shared_ptr<SocksTcpUpstreamFactory>(new SocksTcpUpstreamFactory(
         transport_factory, upstream_host, upstream_port));
-  }
-
-  /// Creates a factory with a given `io_service`.
-  /// The TcpTransportFactory will be created with `io_service_ptr`.
-  static std::shared_ptr<SocksTcpUpstreamFactory> New(
-      const std::shared_ptr<boost::asio::io_service>& io_service_ptr,
-      const std::string& upstream_host, uint16_t upstream_port) {
-    return std::shared_ptr<SocksTcpUpstreamFactory>(
-        new SocksTcpUpstreamFactory(TcpTransportFactory::New(io_service_ptr),
-                                    upstream_host, upstream_port));
   }
 
   void StartRequest(const Address& endpoint,

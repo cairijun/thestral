@@ -128,8 +128,8 @@ void SocksTcpUpstreamFactory::SendSocksRequest(
                 // one reported by the server rather than the one of the
                 // underlying transport
                 auto wrapped_transport =
-                    std::make_shared<detail::SocksTransportWrapper>(
-                        transport, packet.body);
+                    std::make_shared<impl::SocksTransportWrapper>(transport,
+                                                                  packet.body);
                 callback(ec, wrapped_transport);  // finally, success!
               }
             });

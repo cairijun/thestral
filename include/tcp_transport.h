@@ -26,10 +26,31 @@
 
 namespace thestral {
 
-/// Transport on plain TCP protocol.
+/// Base class of transport on plain TCP protocol.
 class TcpTransport : public TransportBase {
-  friend class TcpTransportFactory;
+ public:
+  /// Returns a reference to the underlying tcp socket.
+  virtual boost::asio::ip::tcp::socket& GetUnderlyingSocket() = 0;
+};
 
+/// Base class of transport factory for TcpTransport.
+class TcpTransportFactory
+    : public TransportFactoryBase<boost::asio::ip::tcp::endpoint> {
+ public:
+  /// Synchronously tries connecting to a remote peer with a set of resolver
+  /// results.
+  /// @param iter An iterator reference to the resolver result set. It will be
+  /// advanced to the first connectable result.
+  /// @param error_code A reference to the error code object and will be set to
+  /// the resulting error code.
+  virtual std::shared_ptr<TcpTransport> TryConnect(
+      boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) = 0;
+};
+
+namespace impl {
+
+/// Implementation of TcpTransport on plain tcp protocol.
+class TcpTransportImpl : public TcpTransport {
  public:
   Address GetLocalAddress() const override;
   void StartRead(const boost::asio::mutable_buffers_1& buf,
@@ -39,37 +60,38 @@ class TcpTransport : public TransportBase {
                   WriteCallbackType callback) override;
   void StartClose(CloseCallbackType callback) override;
 
- private:
-  boost::asio::ip::tcp::socket socket_;
+  boost::asio::ip::tcp::socket& GetUnderlyingSocket() override {
+    return socket_;
+  }
 
-  explicit TcpTransport(boost::asio::io_service& io_service);
+ private:
+  friend class TcpTransportFactoryImpl;
+
+  explicit TcpTransportImpl(boost::asio::io_service& io_service);
+
+  boost::asio::ip::tcp::socket socket_;
 };
 
-/// Transport factory for TcpTransport.
-class TcpTransportFactory
-    : public TransportFactoryBase<boost::asio::ip::tcp::endpoint>,
-      public std::enable_shared_from_this<TcpTransportFactory> {
+/// Implementation of TcpTransportFactory on plain tcp protocol.
+class TcpTransportFactoryImpl
+    : public TcpTransportFactory,
+      public std::enable_shared_from_this<TcpTransportFactoryImpl> {
  public:
-  TcpTransportFactory(const TcpTransportFactory&) = delete;
-  TcpTransportFactory& operator=(const TcpTransportFactory&) = delete;
+  TcpTransportFactoryImpl(const TcpTransportFactoryImpl&) = delete;
+  TcpTransportFactoryImpl& operator=(const TcpTransportFactoryImpl&) = delete;
 
-  static std::shared_ptr<TcpTransportFactory> New(
+  static std::shared_ptr<TcpTransportFactoryImpl> New(
       const std::shared_ptr<boost::asio::io_service>& io_service_ptr) {
-    return std::shared_ptr<TcpTransportFactory>(
-        new TcpTransportFactory(io_service_ptr));
+    return std::shared_ptr<TcpTransportFactoryImpl>(
+        new TcpTransportFactoryImpl(io_service_ptr));
   }
 
   void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
   void StartConnect(EndpointType endpoint,
                     ConnectCallbackType callback) override;
-
-  /// Synchronously tries connecting to a remote peer with a set of endpoints.
-  template <typename Iter>
-  std::shared_ptr<TransportBase> TryConnect(Iter& iter, ec_type& error_code) {
-    std::shared_ptr<TcpTransport> transport(new TcpTransport(*io_service_ptr_));
-    iter = boost::asio::connect(transport->socket_, iter, error_code);
-    return transport;
-  }
+  std::shared_ptr<TcpTransport> TryConnect(
+      boost::asio::ip::tcp::resolver::iterator& iter,
+      ec_type& error_code) override;
 
   std::shared_ptr<boost::asio::io_service> get_io_service_ptr() const override {
     return io_service_ptr_;
@@ -78,14 +100,20 @@ class TcpTransportFactory
  private:
   const std::shared_ptr<boost::asio::io_service> io_service_ptr_;
 
-  explicit TcpTransportFactory(
+  explicit TcpTransportFactoryImpl(
       const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
       : io_service_ptr_(io_service_ptr) {}
+
+  std::shared_ptr<TcpTransport> NewTransport() const {
+    return std::shared_ptr<TcpTransport>(
+        new TcpTransportImpl(*io_service_ptr_));
+  }
 
   void DoAccept(const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
                 AcceptCallbackType callback);
 };
 
+}  // namespace impl
 }  // namespace thestral
 
 #endif /* ifndef THESTRAL_TCP_TRANSPORT_H_ */
