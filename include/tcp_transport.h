@@ -59,6 +59,7 @@ class TcpTransportImpl : public TcpTransport {
   void StartWrite(const boost::asio::const_buffers_1& buf,
                   WriteCallbackType callback) override;
   void StartClose(CloseCallbackType callback) override;
+  using TransportBase::StartClose;
 
   boost::asio::ip::tcp::socket& GetUnderlyingSocket() override {
     return socket_;

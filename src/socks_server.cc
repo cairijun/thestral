@@ -20,6 +20,8 @@
 #include <array>
 #include <functional>
 
+#include <boost/asio/ssl/error.hpp>
+
 namespace thestral {
 namespace socks {
 
@@ -49,7 +51,8 @@ bool SocksTcpServer::HandleNewConnection(
     const ec_type& ec, std::shared_ptr<TransportBase> transport) {
   if (ec) {
     transport->StartClose();
-    return false;
+    // if it is an ssl error, than the network is ok, and we may proceed
+    return ec.category() == boost::asio::error::get_ssl_category();
   }
 
   auto self = shared_from_this();

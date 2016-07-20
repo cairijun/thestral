@@ -34,6 +34,32 @@ struct Address {
   AddressType type = AddressType::kIPv4;  ///< Type of the address
   std::string host{0, 0, 0, 0};           ///< Host string of the address
   uint16_t port = 0;                      ///< Port number of the address
+
+  /// Creates an Address from an asio endpoint. The type of the returned object
+  /// will be set to `0xff` if the given endpoint is invalid.
+  template <typename EndpointType>
+  static Address FromAsioEndpoint(const EndpointType& endpoint) {
+    Address address;
+    auto asio_addr = endpoint.address();
+
+    if (asio_addr.is_v4()) {
+      auto asio_addr_bytes = asio_addr.to_v4().to_bytes();
+      address.type = AddressType::kIPv4;
+      address.host.assign(asio_addr_bytes.cbegin(), asio_addr_bytes.cend());
+      address.port = endpoint.port();
+
+    } else if (asio_addr.is_v6()) {
+      auto asio_addr_bytes = asio_addr.to_v6().to_bytes();
+      address.type = AddressType::kIPv6;
+      address.host.assign(asio_addr_bytes.cbegin(), asio_addr_bytes.cend());
+      address.port = endpoint.port();
+
+    } else {
+      address.type = static_cast<AddressType>(0xff);  // invalid address
+    }
+
+    return address;
+  }
 };
 
 }  // namespace thestral
