@@ -23,31 +23,24 @@
 
 #include <boost/asio.hpp>
 
-#include "common.h"
 #include "base.h"
+#include "common.h"
 
 namespace thestral {
 namespace socks {
 
-enum class AuthMethod : uint8_t { kNoAuth = 0x0, kNotSupported = 0xff };
+THESTRAL_DEFINE_ENUM(AuthMethod, uint8_t, (kNoAuth, 0x0),
+                     (kNotSupported, 0xff));
 
-enum class Command : uint8_t {
-  kConnect = 0x1,
-  kBind = 0x2,
-  kUdpAssociate = 0x3,
-};
+THESTRAL_DEFINE_ENUM(Command, uint8_t, (kConnect, 0x1), (kBind, 0x2),
+                     (kUdpAssociate, 0x3));
 
-enum class ResponseCode : uint8_t {
-  kSuccess = 0x0,
-  kSocksServerFailure = 0x1,
-  kConnectionNotAllow = 0x2,
-  kNetworkUnreachable = 0x3,
-  kHostUnreachable = 0x4,
-  kConnectionRefused = 0x5,
-  kTtlExpired = 0x6,
-  kCommandNotSupported = 0x7,
-  kAddressTypeNotSupported = 0x8,
-};
+THESTRAL_DEFINE_ENUM(ResponseCode, uint8_t, (kSuccess, 0x0),
+                     (kSocksServerFailure, 0x1), (kConnectionNotAllow, 0x2),
+                     (kNetworkUnreachable, 0x3), (kHostUnreachable, 0x4),
+                     (kConnectionRefused, 0x5), (kTtlExpired, 0x6),
+                     (kCommandNotSupported, 0x7),
+                     (kAddressTypeNotSupported, 0x8));
 
 struct AuthMethodList : PacketBase {
   typedef std::function<void(const ec_type&, AuthMethodList)>
@@ -136,4 +129,4 @@ typedef PacketWithHeader<ResponseHeader, SocksAddress> ResponsePacket;
 
 }  // namespace socks
 }  // namespace thestral
-#endif /* ifndef THESTRAL_SOCKS_H_ */
+#endif  // THESTRAL_SOCKS_H_

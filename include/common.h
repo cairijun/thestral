@@ -14,20 +14,51 @@
 
 /// @file
 /// Defines some common types and utilities.
-#ifndef THESTRAL_COMMON_
-#define THESTRAL_COMMON_
+#ifndef THESTRAL_COMMON_H_
+#define THESTRAL_COMMON_H_
 
 #include <cstdint>
 #include <string>
 
+#include <boost/preprocessor/seq.hpp>
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/tuple/rem.hpp>
+#include <boost/preprocessor/variadic/to_seq.hpp>
+
+#define _THESTRAL_DEFINE_ENUM_ELEM(name, value) name = value,
+#define _THESTRAL_DEFINE_ENUM_ELEMS(r, d, elm) _THESTRAL_DEFINE_ENUM_ELEM elm
+
+#define _THESTRAL_DEFINE_ENUM_OUTPUT_1(type_name, name) \
+  case type_name::name:                                 \
+    os << #type_name "::" BOOST_PP_STRINGIZE(name);     \
+    break;
+#define _THESTRAL_DEFINE_ENUM_OUTPUT(r, type_name, elm) \
+  _THESTRAL_DEFINE_ENUM_OUTPUT_1(type_name, BOOST_PP_TUPLE_ELEM(0, elm))
+
+#define THESTRAL_DEFINE_ENUM(type_name, base_type, ...)                     \
+  enum class type_name : base_type {                                        \
+    BOOST_PP_SEQ_FOR_EACH(_THESTRAL_DEFINE_ENUM_ELEMS, $,                   \
+                          BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))            \
+  };                                                                        \
+  template <typename C, typename T>                                         \
+  std::basic_ostream<C, T>& operator<<(std::basic_ostream<C, T>& os,        \
+                                       type_name val) {                     \
+    switch (val) {                                                          \
+      BOOST_PP_SEQ_FOR_EACH(_THESTRAL_DEFINE_ENUM_OUTPUT, type_name,        \
+                            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))          \
+      default:                                                              \
+        os << #type_name " (INVALID VALUE: " << static_cast<base_type>(val) \
+           << ")";                                                          \
+        break;                                                              \
+    }                                                                       \
+    return os;                                                              \
+  }
+
 namespace thestral {
 
 /// Types of addresses. Its values follow the definition of SOCKS protocol.
-enum class AddressType : uint8_t {
-  kIPv4 = 0x1,
-  kDomainName = 0x3,
-  kIPv6 = 0x4,
-};
+THESTRAL_DEFINE_ENUM(AddressType, uint8_t, (kIPv4, 0x1), (kDomainName, 0x3),
+                     (kIPv6, 0x4));
 
 /// Address type used across the program.
 struct Address {
@@ -63,4 +94,4 @@ struct Address {
 };
 
 }  // namespace thestral
-#endif /* ifndef THESTRAL_COMMON_ */
+#endif  // THESTRAL_COMMON_H_
