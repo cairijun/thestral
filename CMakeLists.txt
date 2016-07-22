@@ -1,9 +1,20 @@
 cmake_minimum_required(VERSION 3.4)
 project(thestral C CXX)
 
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
+
+option(ENABLE_COVERAGE "build with --coverage option" OFF)
+if(ENABLE_COVERAGE AND NOT UNIX)
+  message(FATAL_ERROR "ENABLE_COVERAGE is available on UNIX")
+endif()
+
+include(CTest)
+if(BUILD_TESTING AND ENABLE_COVERAGE)
+  set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_C_FLAGS "--coverage -O0")
+  set(CMAKE_CXX_FLAGS "--coverage -O0")
+endif()
 
 set(Boost_USE_MULTITHREADED ON)
 find_package(Boost 1.60.0 REQUIRED COMPONENTS system)
@@ -36,7 +47,6 @@ target_link_libraries(thestral-lib
 add_executable(thestral src/main.cc)
 target_link_libraries(thestral thestral-lib)
 
-include(CTest)
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
