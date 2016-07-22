@@ -58,7 +58,12 @@ class TransportBase {
   virtual void StartClose(CloseCallbackType callback) = 0;
 
   /// Convenience function for constructing and reading into a buffer.
-  template <typename T>
+  template <
+      typename T,
+      typename std::enable_if<
+          !(std::is_same<T, boost::asio::mutable_buffers_1&>::value ||
+            std::is_convertible<T, boost::asio::mutable_buffers_1>::value),
+          int>::type = 0>
   void StartRead(T&& data, ReadCallbackType callback,
                  bool allow_short_read = false) {
     StartRead(boost::asio::buffer(std::forward<T>(data)), callback,
@@ -75,7 +80,11 @@ class TransportBase {
   }
 
   /// Convenience function for constructing and writing from a buffer.
-  template <typename T>
+  template <typename T,
+            typename std::enable_if<
+                !(std::is_same<T, boost::asio::const_buffers_1&>::value ||
+                  std::is_convertible<T, boost::asio::const_buffers_1>::value),
+                int>::type = 0>
   void StartWrite(T&& data, WriteCallbackType callback) {
     StartWrite(boost::asio::buffer(std::forward<T>(data)), callback);
   }

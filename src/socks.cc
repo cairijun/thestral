@@ -29,8 +29,8 @@ void AuthMethodList::StartCreateFrom(std::shared_ptr<TransportBase> transport,
       return;
     }
     auto packet = std::make_shared<AuthMethodList>();
-    packet->version = (*header) >> 8;
-    packet->methods.resize((*header) & 0xff);
+    packet->version = (*header) & 0xff;
+    packet->methods.resize((*header) >> 8);
     transport->StartRead(packet->methods,
                          [packet, callback](const ec_type& ec, size_t) {
                            callback(ec, *packet);

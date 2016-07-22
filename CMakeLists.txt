@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 2.8.2)
+cmake_minimum_required(VERSION 3.4)
 project(thestral C CXX)
 
 set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 
 set(Boost_USE_MULTITHREADED ON)
@@ -19,6 +20,23 @@ include_directories(
     ${${CMAKE_PROJECT_NAME}_INCLUDE_DIR}
 )
 
-file(GLOB SRCS src/*.cc)
-add_executable(thestral ${SRCS})
-target_link_libraries(thestral ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES})
+set(SRCS
+    src/base.cc
+    src/direct_upstream.cc
+    src/socks.cc
+    src/socks_server.cc
+    src/socks_upstream.cc
+    src/ssl.cc
+    src/tcp_transport.cc)
+
+add_library(thestral-lib ${SRCS})
+target_link_libraries(thestral-lib
+    ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES})
+
+add_executable(thestral src/main.cc)
+target_link_libraries(thestral thestral-lib)
+
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
