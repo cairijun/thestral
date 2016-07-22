@@ -86,7 +86,11 @@ class TransportBase {
                   std::is_convertible<T, boost::asio::const_buffers_1>::value),
                 int>::type = 0>
   void StartWrite(T&& data, WriteCallbackType callback) {
-    StartWrite(boost::asio::buffer(std::forward<T>(data)), callback);
+    // asio::buffer() may create a `mutable_buffers_1`, which is not implicitly
+    // convertible to `const_buffers_1`, so an explicit conversion is required
+    StartWrite(boost::asio::const_buffers_1(
+                   boost::asio::buffer(std::forward<T>(data))),
+               callback);
   }
 
   /// Convenience function for constructing and writing from a buffer of

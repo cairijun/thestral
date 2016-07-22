@@ -19,6 +19,9 @@
 
 #include <memory>
 #include <string>
+#include <thread>
+
+#include <boost/asio.hpp>
 
 #include "base.h"
 #include "common.h"
@@ -47,6 +50,25 @@ struct MockTransport : public TransportBase {
   std::string write_buf;
   ec_type ec;
   bool closed = false;
+};
+
+class MockServer {
+ public:
+  MockServer();
+  ~MockServer();
+  boost::asio::ip::tcp::endpoint GetEndpoint() const {
+    return boost::asio::ip::tcp::endpoint(
+        boost::asio::ip::address::from_string("127.0.0.1"), kPort);
+  }
+
+ private:
+  constexpr static uint16_t kPort = 29172;
+
+  void Run();
+
+  boost::asio::io_service io_service_;
+  boost::asio::ip::tcp::acceptor acceptor_;
+  std::unique_ptr<std::thread> t_;
 };
 
 }  // namespace testing

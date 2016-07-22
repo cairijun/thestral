@@ -19,6 +19,7 @@
 #include <algorithm>
 
 #include <boost/asio.hpp>
+#include <boost/system/error_code.hpp>
 
 namespace thestral {
 namespace testing {
@@ -58,6 +59,40 @@ void MockTransport::StartClose(CloseCallbackType callback) {
         boost::asio::error::basic_errors::bad_descriptor);
     closed = true;
     callback(ec_type());
+  }
+}
+
+MockServer::MockServer()
+    : acceptor_(io_service_,
+                asio::ip::tcp::endpoint(asio::ip::tcp::v4(), kPort)) {
+  t_.reset(new std::thread(std::bind(&MockServer::Run, this)));
+}
+
+MockServer::~MockServer() {
+  acceptor_.close();
+  t_->join();
+}
+
+void MockServer::Run() {
+  while (true) {
+    asio::ip::tcp::socket s(io_service_);
+    boost::system::error_code ec;
+    acceptor_.accept(s, ec);
+    if (ec) {
+      break;
+    }
+
+    while (true) {
+      char data[8192];
+      auto len = s.read_some(asio::buffer(data), ec);
+      if (ec) {
+        break;
+      }
+      asio::write(s, asio::buffer(data, len), ec);
+      if (ec) {
+        break;
+      }
+    }
   }
 }
 

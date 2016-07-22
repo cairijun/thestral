@@ -45,6 +45,9 @@ class TcpTransportFactory
   /// the resulting error code.
   virtual std::shared_ptr<TcpTransport> TryConnect(
       boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) = 0;
+
+  static std::shared_ptr<TcpTransportFactory> New(
+      const std::shared_ptr<boost::asio::io_service>& io_service_ptr);
 };
 
 namespace impl {
@@ -105,8 +108,8 @@ class TcpTransportFactoryImpl
       const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
       : io_service_ptr_(io_service_ptr) {}
 
-  std::shared_ptr<TcpTransport> NewTransport() const {
-    return std::shared_ptr<TcpTransport>(
+  std::shared_ptr<TcpTransportImpl> NewTransport() const {
+    return std::shared_ptr<TcpTransportImpl>(
         new TcpTransportImpl(*io_service_ptr_));
   }
 

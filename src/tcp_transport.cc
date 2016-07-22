@@ -19,16 +19,19 @@
 #include <functional>
 
 namespace thestral {
+
+std::shared_ptr<TcpTransportFactory> TcpTransportFactory::New(
+    const std::shared_ptr<boost::asio::io_service>& io_service_ptr) {
+  return impl::TcpTransportFactoryImpl::New(io_service_ptr);
+}
+
 namespace impl {
 
 namespace asio = boost::asio;
 namespace ip = boost::asio::ip;
 
 TcpTransportImpl::TcpTransportImpl(asio::io_service& io_service)
-    : socket_(io_service) {
-  socket_.set_option(ip::tcp::no_delay(true));
-  socket_.set_option(ip::tcp::socket::reuse_address(true));
-}
+    : socket_(io_service) {}
 
 Address TcpTransportImpl::GetLocalAddress() const {
   return Address::FromAsioEndpoint(socket_.local_endpoint());
@@ -73,7 +76,15 @@ void TcpTransportFactoryImpl::StartConnect(EndpointType endpoint,
                                            ConnectCallbackType callback) {
   auto transport = NewTransport();
   transport->GetUnderlyingSocket().async_connect(
-      endpoint, std::bind(callback, std::placeholders::_1, transport));
+      endpoint, [transport, callback](const ec_type& ec) {
+        if (ec) {
+          transport->StartClose();
+          callback(ec, nullptr);
+        } else {
+          transport->GetUnderlyingSocket().set_option(ip::tcp::no_delay(true));
+          callback(ec, transport);
+        }
+      });
 }
 
 void TcpTransportFactoryImpl::DoAccept(
@@ -90,6 +101,7 @@ void TcpTransportFactoryImpl::DoAccept(
         }
       });
 }
+
 std::shared_ptr<TcpTransport> TcpTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   auto transport = NewTransport();
