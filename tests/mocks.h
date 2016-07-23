@@ -30,7 +30,9 @@ namespace thestral {
 namespace testing {
 
 struct MockTransport : public TransportBase {
-  static std::shared_ptr<MockTransport> New(const std::string& read_buf = "");
+  static std::shared_ptr<MockTransport> New(
+      const std::shared_ptr<boost::asio::io_service>& io_service_ptr,
+      const std::string& read_buf = "");
 
   Address GetLocalAddress() const override { return local_address; }
 
@@ -45,6 +47,7 @@ struct MockTransport : public TransportBase {
   using TransportBase::StartWrite;
   using TransportBase::StartClose;
 
+  std::shared_ptr<boost::asio::io_service> io_service_ptr;
   Address local_address;
   std::string read_buf;
   std::string write_buf;

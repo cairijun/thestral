@@ -17,6 +17,7 @@
 #include "mocks.h"
 
 #include <algorithm>
+#include <functional>
 
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
@@ -26,9 +27,12 @@ namespace testing {
 
 namespace asio = boost::asio;
 
-std::shared_ptr<MockTransport> MockTransport::New(const std::string& read_buf) {
+std::shared_ptr<MockTransport> MockTransport::New(
+    const std::shared_ptr<boost::asio::io_service>& io_service_ptr,
+    const std::string& read_buf) {
   auto p = std::make_shared<MockTransport>();
   p->read_buf = read_buf;
+  p->io_service_ptr = io_service_ptr;
   return p;
 }
 
@@ -41,24 +45,24 @@ void MockTransport::StartRead(const asio::mutable_buffers_1& buf,
     ec = asio::error::make_error_code(
         asio::error::basic_errors::connection_reset);
   }
-  callback(ec, len);
+  io_service_ptr->post(std::bind(callback, ec, len));
 }
 
 void MockTransport::StartWrite(const asio::const_buffers_1& buf,
                                WriteCallbackType callback) {
   auto p = asio::buffer_cast<const char*>(buf);
   write_buf.append(p, p + asio::buffer_size(buf));
-  callback(ec, asio::buffer_size(buf));
+  io_service_ptr->post(std::bind(callback, ec, asio::buffer_size(buf)));
 }
 
 void MockTransport::StartClose(CloseCallbackType callback) {
   if (closed) {
-    callback(ec);
+    io_service_ptr->post(std::bind(callback, ec));
   } else {
     ec = boost::asio::error::make_error_code(
         boost::asio::error::basic_errors::bad_descriptor);
     closed = true;
-    callback(ec_type());
+    io_service_ptr->post(std::bind(callback, ec_type()));
   }
 }
 
