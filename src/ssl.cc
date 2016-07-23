@@ -103,7 +103,7 @@ void SslTransportFactoryImpl::StartConnect(EndpointType endpoint,
       });
 }
 
-std::shared_ptr<TcpTransport> SslTransportFactoryImpl::TryConnect(
+std::shared_ptr<TransportBase> SslTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   std::shared_ptr<SslTransportImpl> transport(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));

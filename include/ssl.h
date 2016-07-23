@@ -72,7 +72,7 @@ class SslTransportFactoryImpl
   void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
   void StartConnect(EndpointType endpoint,
                     ConnectCallbackType callback) override;
-  std::shared_ptr<TcpTransport> TryConnect(
+  std::shared_ptr<TransportBase> TryConnect(
       boost::asio::ip::tcp::resolver::iterator& iter,
       ec_type& error_code) override;
 
@@ -125,4 +125,4 @@ class SslTransportFactoryBuilder {
 }  // namespace ssl
 }  // namespace thestral
 
-#endif /* ifndef THESTRAL_SSL_H_ */
+#endif  // THESTRAL_SSL_H_

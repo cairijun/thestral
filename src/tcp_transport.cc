@@ -102,7 +102,7 @@ void TcpTransportFactoryImpl::DoAccept(
       });
 }
 
-std::shared_ptr<TcpTransport> TcpTransportFactoryImpl::TryConnect(
+std::shared_ptr<TransportBase> TcpTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   auto transport = NewTransport();
   boost::asio::connect(transport->GetUnderlyingSocket(), iter, error_code);

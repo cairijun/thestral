@@ -66,6 +66,57 @@ void MockTransport::StartClose(CloseCallbackType callback) {
   }
 }
 
+std::shared_ptr<MockTransport> MockTcpTransportFactory::NewMockTransport(
+    const std::string& read_buf) {
+  auto transport = MockTransport::New(io_service_ptr_, read_buf);
+  transports_.push(transport);
+  return transport;
+}
+
+MockTcpTransportFactory::EndpointType MockTcpTransportFactory::PopEndpoint() {
+  auto endpoint = endpoints_.front();
+  endpoints_.pop();
+  return endpoint;
+}
+
+void MockTcpTransportFactory::StartAccept(EndpointType endpoint,
+                                          AcceptCallbackType callback) {
+  endpoints_.push(endpoint);
+  io_service_ptr_->post(
+      std::bind(&MockTcpTransportFactory::AcceptOne, this, callback));
+}
+
+void MockTcpTransportFactory::AcceptOne(AcceptCallbackType callback) {
+  if (transports_.empty()) {
+    callback(
+        boost::asio::error::make_error_code(boost::asio::error::bad_descriptor),
+        nullptr);
+  } else {
+    auto transport = transports_.front();
+    transports_.pop();
+    if (callback(ec_type(), transport)) {
+      io_service_ptr_->post(
+          std::bind(&MockTcpTransportFactory::AcceptOne, this, callback));
+    }
+  }
+}
+
+void MockTcpTransportFactory::StartConnect(EndpointType endpoint,
+                                           ConnectCallbackType callback) {
+  endpoints_.push(endpoint);
+  auto transport = transports_.front();
+  transports_.pop();
+  io_service_ptr_->post(std::bind(callback, ec_type(), transport));
+}
+
+std::shared_ptr<TransportBase> MockTcpTransportFactory::TryConnect(
+    boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
+  endpoints_.push(*iter);
+  auto transport = transports_.front();
+  transports_.pop();
+  return transport;
+}
+
 MockServer::MockServer()
     : acceptor_(io_service_,
                 asio::ip::tcp::endpoint(asio::ip::tcp::v4(), kPort)) {

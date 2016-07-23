@@ -43,7 +43,7 @@ class TcpTransportFactory
   /// advanced to the first connectable result.
   /// @param error_code A reference to the error code object and will be set to
   /// the resulting error code.
-  virtual std::shared_ptr<TcpTransport> TryConnect(
+  virtual std::shared_ptr<TransportBase> TryConnect(
       boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) = 0;
 
   static std::shared_ptr<TcpTransportFactory> New(
@@ -93,7 +93,7 @@ class TcpTransportFactoryImpl
   void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
   void StartConnect(EndpointType endpoint,
                     ConnectCallbackType callback) override;
-  std::shared_ptr<TcpTransport> TryConnect(
+  std::shared_ptr<TransportBase> TryConnect(
       boost::asio::ip::tcp::resolver::iterator& iter,
       ec_type& error_code) override;
 
@@ -120,4 +120,4 @@ class TcpTransportFactoryImpl
 }  // namespace impl
 }  // namespace thestral
 
-#endif /* ifndef THESTRAL_TCP_TRANSPORT_H_ */
+#endif  // THESTRAL_TCP_TRANSPORT_H_

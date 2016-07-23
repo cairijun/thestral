@@ -219,13 +219,12 @@ void PacketWithHeader<Header, Body>::StartCreateFrom(
         }
         Body::StartCreateFrom(transport, [header, transport, callback](
                                              const ec_type& ec, Body body) {
-          if (ec) {
-            callback(ec, PacketWithHeader<Header, Body>());
-          } else {
-            PacketWithHeader<Header, Body> packet;
+          PacketWithHeader<Header, Body> packet;
+          if (!ec) {
             packet.header = header;
             packet.body = body;
           }
+          callback(ec, packet);
         });
       });
 }

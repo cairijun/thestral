@@ -18,6 +18,7 @@
 #define THESTRAL_TESTS_MOCKS_H_
 
 #include <memory>
+#include <queue>
 #include <string>
 #include <thread>
 
@@ -25,6 +26,7 @@
 
 #include "base.h"
 #include "common.h"
+#include "tcp_transport.h"
 
 namespace thestral {
 namespace testing {
@@ -53,6 +55,35 @@ struct MockTransport : public TransportBase {
   std::string write_buf;
   ec_type ec;
   bool closed = false;
+};
+
+class MockTcpTransportFactory : public TcpTransportFactory {
+ public:
+  MockTcpTransportFactory(
+      const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
+      : io_service_ptr_(io_service_ptr) {}
+
+  std::shared_ptr<MockTransport> NewMockTransport(
+      const std::string& read_buf = "");
+  EndpointType PopEndpoint();
+
+  void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
+  void StartConnect(EndpointType endpoint,
+                    ConnectCallbackType callback) override;
+  std::shared_ptr<TransportBase> TryConnect(
+      boost::asio::ip::tcp::resolver::iterator& iter,
+      ec_type& error_code) override;
+
+  std::shared_ptr<boost::asio::io_service> get_io_service_ptr() const override {
+    return io_service_ptr_;
+  }
+
+ private:
+  void AcceptOne(AcceptCallbackType callback);
+
+  std::shared_ptr<boost::asio::io_service> io_service_ptr_;
+  std::queue<std::shared_ptr<MockTransport>> transports_;
+  std::queue<EndpointType> endpoints_;
 };
 
 class MockServer {

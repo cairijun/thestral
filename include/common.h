@@ -18,6 +18,7 @@
 #define THESTRAL_COMMON_H_
 
 #include <cstdint>
+#include <iostream>
 #include <string>
 
 #include <boost/preprocessor/seq.hpp>
@@ -66,6 +67,10 @@ struct Address {
   std::string host{0, 0, 0, 0};           ///< Host string of the address
   uint16_t port = 0;                      ///< Port number of the address
 
+  bool operator==(const Address& other) const {
+    return type == other.type && host == other.host && port == other.port;
+  }
+
   /// Creates an Address from an asio endpoint. The type of the returned object
   /// will be set to `0xff` if the given endpoint is invalid.
   template <typename EndpointType>
@@ -92,6 +97,14 @@ struct Address {
     return address;
   }
 };
+
+template <typename C, typename T>
+std::basic_ostream<C, T>& operator<<(std::basic_ostream<C, T>& os,
+                                     const Address& address) {
+  os << "Address (type: " << address.type << ", host: " << address.host
+     << ", port: " << address.port << ")";
+  return os;
+}
 
 }  // namespace thestral
 #endif  // THESTRAL_COMMON_H_
