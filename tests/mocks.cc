@@ -42,8 +42,7 @@ void MockTransport::StartRead(const asio::mutable_buffers_1& buf,
   auto len = asio::buffer_copy(buf, asio::buffer(read_buf));
   read_buf = read_buf.substr(len);
   if (!allow_short_read && len < asio::buffer_size(buf)) {
-    ec = asio::error::make_error_code(
-        asio::error::basic_errors::connection_reset);
+    ec = asio::error::make_error_code(asio::error::misc_errors::eof);
   }
   io_service_ptr->post(std::bind(callback, ec, len));
 }
@@ -115,6 +114,27 @@ std::shared_ptr<TransportBase> MockTcpTransportFactory::TryConnect(
   auto transport = transports_.front();
   transports_.pop();
   return transport;
+}
+
+std::shared_ptr<MockTransport> MockUpstreamFactory::NewMockTransport(
+    const std::string& read_buf) {
+  auto transport = MockTransport::New(io_service_ptr_, read_buf);
+  transports_.push(transport);
+  return transport;
+}
+
+Address MockUpstreamFactory::PopAddress() {
+  auto address = addresses_.front();
+  addresses_.pop();
+  return address;
+}
+
+void MockUpstreamFactory::StartRequest(const Address& endpoint,
+                                       RequestCallbackType callback) {
+  addresses_.push(endpoint);
+  auto transport = transports_.front();
+  transports_.pop();
+  io_service_ptr_->post(std::bind(callback, ec_type(), transport));
 }
 
 MockServer::MockServer()

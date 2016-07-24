@@ -50,7 +50,9 @@ void SocksTcpServer::Start() {
 bool SocksTcpServer::HandleNewConnection(
     const ec_type& ec, std::shared_ptr<TransportBase> transport) {
   if (ec) {
-    transport->StartClose();
+    if (transport) {
+      transport->StartClose();
+    }
     // if it is an ssl error, than the network is ok, and we may proceed
     return ec.category() == boost::asio::error::get_ssl_category();
   }
@@ -156,7 +158,7 @@ void SocksTcpServer::StartRelay(std::shared_ptr<TransportBase> from,
               std::bind(&SocksTcpServer::StartRelay, self, from, to));
         }
       },
-      true  /* allow short read */);
+      true /* allow short read */);
 }
 
 }  // namespace socks

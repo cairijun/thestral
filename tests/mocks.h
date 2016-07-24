@@ -86,6 +86,29 @@ class MockTcpTransportFactory : public TcpTransportFactory {
   std::queue<EndpointType> endpoints_;
 };
 
+class MockUpstreamFactory : public UpstreamFactoryBase {
+ public:
+  MockUpstreamFactory(
+      const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
+      : io_service_ptr_(io_service_ptr) {}
+
+  std::shared_ptr<MockTransport> NewMockTransport(
+      const std::string& read_buf = "");
+  Address PopAddress();
+
+  void StartRequest(const Address& endpoint,
+                    RequestCallbackType callback) override;
+
+  std::shared_ptr<boost::asio::io_service> get_io_service_ptr() const override {
+    return io_service_ptr_;
+  }
+
+ private:
+  std::shared_ptr<boost::asio::io_service> io_service_ptr_;
+  std::queue<std::shared_ptr<MockTransport>> transports_;
+  std::queue<Address> addresses_;
+};
+
 class MockServer {
  public:
   MockServer();
