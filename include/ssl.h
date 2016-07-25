@@ -34,7 +34,8 @@ class SslTransportFactoryImpl;
 
 namespace impl {
 /// A TcpTransport wrapping SSL protocol.
-class SslTransportImpl : public TcpTransport {
+class SslTransportImpl : public TcpTransport,
+                         public std::enable_shared_from_this<SslTransportImpl> {
  public:
   void StartRead(const boost::asio::mutable_buffers_1& buf,
                  ReadCallbackType callback,

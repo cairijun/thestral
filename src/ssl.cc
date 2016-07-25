@@ -27,10 +27,7 @@ namespace impl {
 
 SslTransportImpl::SslTransportImpl(boost::asio::io_service& io_service,
                                    boost::asio::ssl::context& ssl_ctx)
-    : ssl_sock_(io_service, ssl_ctx) {
-  ssl_sock_.next_layer().set_option(ip::tcp::no_delay(true));
-  ssl_sock_.next_layer().set_option(ip::tcp::socket::reuse_address(true));
-}
+    : ssl_sock_(io_service, ssl_ctx) {}
 
 void SslTransportImpl::StartRead(const boost::asio::mutable_buffers_1& buf,
                                  ReadCallbackType callback,
@@ -48,7 +45,11 @@ void SslTransportImpl::StartWrite(const boost::asio::const_buffers_1& buf,
 }
 
 void SslTransportImpl::StartClose(CloseCallbackType callback) {
-  ssl_sock_.async_shutdown(callback);
+  // openssl will crash if the socket is destroyed before shutdown operation
+  // completes
+  auto self = shared_from_this();
+  ssl_sock_.async_shutdown(
+      [self, callback](const ec_type& ec) { callback(ec); });
 }
 
 void SslTransportFactoryImpl::StartAccept(EndpointType endpoint,
@@ -97,6 +98,7 @@ void SslTransportFactoryImpl::StartConnect(EndpointType endpoint,
           transport->StartClose();
           callback(ec, nullptr);
         }
+        transport->ssl_sock_.lowest_layer().set_option(ip::tcp::no_delay(true));
         transport->ssl_sock_.async_handshake(
             boost::asio::ssl::stream_base::client,
             std::bind(callback, std::placeholders::_1, transport));
@@ -110,6 +112,7 @@ std::shared_ptr<TransportBase> SslTransportFactoryImpl::TryConnect(
   iter = boost::asio::connect(transport->ssl_sock_.lowest_layer(), iter,
                               error_code);
   if (!error_code) {
+    transport->ssl_sock_.lowest_layer().set_option(ip::tcp::no_delay(true));
     transport->ssl_sock_.handshake(boost::asio::ssl::stream_base::client,
                                    error_code);
   }

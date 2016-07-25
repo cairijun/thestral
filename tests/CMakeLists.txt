@@ -9,7 +9,10 @@ include_directories(
 file(GLOB SRCS *.cc)
 add_executable(thestral-tests ${SRCS})
 target_link_libraries(thestral-tests thestral-lib ${Boost_LIBRARIES})
-add_test(NAME thestral-tests COMMAND thestral-tests)
+add_test(NAME thestral-tests COMMAND thestral-tests -l test_suite -x -r short)
+
+file(GLOB TEST_SSL_FILES *.pem)
+file(COPY ${TEST_SSL_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 if(BUILD_TESTING AND ENABLE_COVERAGE AND UNIX)
   add_custom_target(
