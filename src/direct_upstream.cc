@@ -24,13 +24,12 @@ void DirectTcpUpstreamFactory::StartRequest(const Address& address,
                                             RequestCallbackType callback) {
   switch (address.type) {
     case AddressType::kDomainName: {
-      ip::tcp::resolver resolver(*transport_factory_->get_io_service_ptr());
       ip::tcp::resolver::query query(
           address.host, std::to_string(address.port),
           ip::tcp::resolver::query::address_configured |
               ip::tcp::resolver::query::numeric_service);
       auto self = shared_from_this();
-      resolver.async_resolve(
+      resolver_.async_resolve(
           query, [self, callback](const ec_type& ec,
                                   ip::tcp::resolver::iterator iter) {
             if (ec) {

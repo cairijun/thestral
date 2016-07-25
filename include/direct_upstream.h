@@ -50,9 +50,11 @@ class DirectTcpUpstreamFactory
  private:
   DirectTcpUpstreamFactory(
       const std::shared_ptr<TcpTransportFactory>& transport_factory)
-      : transport_factory_(transport_factory) {}
+      : transport_factory_(transport_factory),
+        resolver_(*transport_factory->get_io_service_ptr()) {}
 
   const std::shared_ptr<TcpTransportFactory> transport_factory_;
+  boost::asio::ip::tcp::resolver resolver_;
 };
 
 }  // namespace thestral
