@@ -48,7 +48,7 @@ void SocksTcpServer::Start() {
 }
 
 bool SocksTcpServer::HandleNewConnection(
-    const ec_type& ec, std::shared_ptr<TransportBase> transport) {
+    const ec_type& ec, const std::shared_ptr<TransportBase>& transport) {
   if (ec) {
     if (transport) {
       transport->StartClose();
@@ -84,7 +84,7 @@ bool SocksTcpServer::HandleNewConnection(
 }
 
 void SocksTcpServer::ReceiveRequestPacket(
-    const ec_type& ec, std::shared_ptr<TransportBase> transport) {
+    const ec_type& ec, const std::shared_ptr<TransportBase>& transport) {
   if (ec) {
     transport->StartClose();
     return;
@@ -104,13 +104,13 @@ void SocksTcpServer::ReceiveRequestPacket(
       });
 }
 
-void SocksTcpServer::HandleRequest(RequestPacket request,
-                                   std::shared_ptr<TransportBase> downstream) {
+void SocksTcpServer::HandleRequest(
+    RequestPacket request, const std::shared_ptr<TransportBase>& downstream) {
   auto self = shared_from_this();
   upstream_factory_->StartRequest(
       request.body,
       [self, downstream](const ec_type& ec,
-                         std::shared_ptr<TransportBase> upstream) {
+                         const std::shared_ptr<TransportBase>& upstream) {
         if (ec) {
           // TODO(richardtsai): handle more kinds of errors
           self->ResponseError(ResponseCode::kConnectionRefused, downstream);
@@ -133,8 +133,9 @@ void SocksTcpServer::HandleRequest(RequestPacket request,
       });
 }
 
-void SocksTcpServer::ResponseError(ResponseCode response_code,
-                                   std::shared_ptr<TransportBase> transport) {
+void SocksTcpServer::ResponseError(
+    ResponseCode response_code,
+    const std::shared_ptr<TransportBase>& transport) {
   ResponsePacket response;
   response.header.response_code = response_code;
   response.StartWriteTo(transport, [transport](const ec_type&, size_t) {
@@ -142,8 +143,8 @@ void SocksTcpServer::ResponseError(ResponseCode response_code,
   });
 }
 
-void SocksTcpServer::StartRelay(std::shared_ptr<TransportBase> from,
-                                std::shared_ptr<TransportBase> to) {
+void SocksTcpServer::StartRelay(const std::shared_ptr<TransportBase>& from,
+                                const std::shared_ptr<TransportBase>& to) {
   auto self = shared_from_this();
   auto buf = std::make_shared<std::array<char, kRelayBufferSize>>();
   from->StartRead(

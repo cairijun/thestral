@@ -49,8 +49,8 @@ struct AuthMethodList : PacketBase {
   uint8_t version = 0x5;
   std::vector<AuthMethod> methods;
 
-  static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
-                              CreateCallbackType callback);
+  static void StartCreateFrom(const std::shared_ptr<TransportBase>& transport,
+                              const CreateCallbackType& callback);
 
   std::string ToString() const override;
 };
@@ -112,15 +112,15 @@ struct SocksAddress : Address, PacketBase {
   explicit SocksAddress(const Address& address);
   SocksAddress& operator=(const Address& address);
 
-  static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
-                              CreateCallbackType callback);
+  static void StartCreateFrom(const std::shared_ptr<TransportBase>& transport,
+                              const CreateCallbackType& callback);
 
   std::string ToString() const override;
 
  private:
-  static void StartReadDomain(std::shared_ptr<SocksAddress> packet,
-                              std::shared_ptr<TransportBase> transport,
-                              CreateCallbackType callback);
+  static void StartReadDomain(const std::shared_ptr<SocksAddress>& packet,
+                              const std::shared_ptr<TransportBase>& transport,
+                              const CreateCallbackType& callback);
   void ExtractPortFromHost();
 };
 

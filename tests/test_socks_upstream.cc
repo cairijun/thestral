@@ -67,8 +67,8 @@ BOOST_AUTO_TEST_CASE(test_request) {
         p2.ToString() + p4.ToString() + data_to_downstream));
 
     upstream->StartRequest(
-        p3.body,
-        [&](const ec_type& ec, std::shared_ptr<TransportBase> transport) {
+        p3.body, [&](const ec_type& ec,
+                     const std::shared_ptr<TransportBase>& transport) {
           BOOST_TEST(!ec);
           auto local_addr = transport->GetLocalAddress();
           BOOST_CHECK_EQUAL(Address(p4.body), local_addr);

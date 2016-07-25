@@ -21,8 +21,8 @@ namespace socks {
 
 namespace ip = boost::asio::ip;
 
-void SocksTcpUpstreamFactory::StartRequest(const Address& endpoint,
-                                           RequestCallbackType callback) {
+void SocksTcpUpstreamFactory::StartRequest(
+    const Address& endpoint, const RequestCallbackType& callback) {
   ec_type ec;
   std::shared_ptr<TransportBase> transport;
 
@@ -64,8 +64,9 @@ void SocksTcpUpstreamFactory::StartRequest(const Address& endpoint,
     auto self = shared_from_this();
     transport_factory_->StartConnect(
         upstream_endpoint_,
-        [self, endpoint, callback](const ec_type& ec,
-                                   std::shared_ptr<TransportBase> transport) {
+        [self, endpoint, callback](
+            const ec_type& ec,
+            const std::shared_ptr<TransportBase>& transport) {
           if (ec) {
             transport->StartClose();
             callback(ec, nullptr);  // don't care about the closing result
@@ -77,8 +78,8 @@ void SocksTcpUpstreamFactory::StartRequest(const Address& endpoint,
 }
 
 void SocksTcpUpstreamFactory::SendAuthRequest(
-    const Address& endpoint, std::shared_ptr<TransportBase> transport,
-    RequestCallbackType callback) const {
+    const Address& endpoint, const std::shared_ptr<TransportBase>& transport,
+    const RequestCallbackType& callback) const {
   AuthMethodList packet;
   packet.methods.push_back(AuthMethod::kNoAuth);
   auto self = shared_from_this();
@@ -103,8 +104,8 @@ void SocksTcpUpstreamFactory::SendAuthRequest(
 }
 
 void SocksTcpUpstreamFactory::SendSocksRequest(
-    const Address& endpoint, std::shared_ptr<TransportBase> transport,
-    RequestCallbackType callback) const {
+    const Address& endpoint, const std::shared_ptr<TransportBase>& transport,
+    const RequestCallbackType& callback) const {
   RequestPacket packet;
   packet.header.command = Command::kConnect;
   packet.body = endpoint;

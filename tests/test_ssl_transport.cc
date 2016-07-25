@@ -22,8 +22,9 @@
 #include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 
-#define TRANSPORT_CALLBACK(...) \
-  [__VA_ARGS__](const ec_type& ec, std::shared_ptr<TransportBase> transport)
+#define TRANSPORT_CALLBACK(...)    \
+  [__VA_ARGS__](const ec_type& ec, \
+                const std::shared_ptr<TransportBase>& transport)
 #define BYTES_CALLBACK(...) [__VA_ARGS__](const ec_type& ec, size_t n_bytes)
 
 namespace thestral {
@@ -33,21 +34,19 @@ BOOST_AUTO_TEST_SUITE(test_ssl_transport);
 
 BOOST_AUTO_TEST_CASE(test_ssl_transport) {
   auto io_service = std::make_shared<boost::asio::io_service>();
-  auto server_transport_factory =
-      SslTransportFactoryBuilder()
-          .LoadCaFile("RTSAI ROOT CA.pem")
-          .LoadCertChain("test.server.pem")
-          .LoadPrivateKey("test.server.key.pem")
-          .LoadDhParams("dh2048.pem")
-          .SetVerifyPeer(true)
-          .Build(io_service);
-  auto client_transport_factory =
-      SslTransportFactoryBuilder()
-          .LoadCaFile("RTSAI ROOT CA.pem")
-          .LoadCertChain("test.pem")
-          .LoadPrivateKey("test.key.pem")
-          .SetVerifyPeer(true)
-          .Build(io_service);
+  auto server_transport_factory = SslTransportFactoryBuilder()
+                                      .LoadCaFile("RTSAI ROOT CA.pem")
+                                      .LoadCertChain("test.server.pem")
+                                      .LoadPrivateKey("test.server.key.pem")
+                                      .LoadDhParams("dh2048.pem")
+                                      .SetVerifyPeer(true)
+                                      .Build(io_service);
+  auto client_transport_factory = SslTransportFactoryBuilder()
+                                      .LoadCaFile("RTSAI ROOT CA.pem")
+                                      .LoadCertChain("test.pem")
+                                      .LoadPrivateKey("test.key.pem")
+                                      .SetVerifyPeer(true)
+                                      .Build(io_service);
 
   std::string data_to_client = "data to client";
   std::string data_to_server = "data to server";
@@ -72,9 +71,8 @@ BOOST_AUTO_TEST_CASE(test_ssl_transport) {
             BOOST_TEST(!ec);
             BOOST_CHECK_EQUAL(data_to_client.size(), n_bytes);
 
-            transport->StartClose([&](const ec_type& ec) {
-              accept_done = true;
-            });
+            transport->StartClose(
+                [&](const ec_type& ec) { accept_done = true; });
           });
         });
 
@@ -90,18 +88,17 @@ BOOST_AUTO_TEST_CASE(test_ssl_transport) {
       BOOST_CHECK_EQUAL(data_to_server.size(), n_bytes);
 
       auto read_buf = std::make_shared<std::array<char, 64>>();
-      transport->StartRead(*read_buf, data_to_client.size(),
-                           BYTES_CALLBACK(&, read_buf, transport) {
-                             BOOST_TEST(!ec);
-                             BOOST_CHECK_EQUAL(data_to_client.size(), n_bytes);
-                             read_buf->at(n_bytes) = '\0';
-                             BOOST_CHECK_EQUAL(data_to_client,
-                                               read_buf->data());
+      transport->StartRead(
+          *read_buf, data_to_client.size(),
+          BYTES_CALLBACK(&, read_buf, transport) {
+            BOOST_TEST(!ec);
+            BOOST_CHECK_EQUAL(data_to_client.size(), n_bytes);
+            read_buf->at(n_bytes) = '\0';
+            BOOST_CHECK_EQUAL(data_to_client, read_buf->data());
 
-                             transport->StartClose([&](const ec_type& ec) {
-                               connect_done = true;
-                             });
-                           });
+            transport->StartClose(
+                [&](const ec_type& ec) { connect_done = true; });
+          });
     });
   });
 

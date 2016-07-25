@@ -30,7 +30,7 @@ SslTransportImpl::SslTransportImpl(boost::asio::io_service& io_service,
     : ssl_sock_(io_service, ssl_ctx) {}
 
 void SslTransportImpl::StartRead(const boost::asio::mutable_buffers_1& buf,
-                                 ReadCallbackType callback,
+                                 const ReadCallbackType& callback,
                                  bool allow_short_read) {
   if (allow_short_read) {
     ssl_sock_.async_read_some(buf, callback);
@@ -40,11 +40,11 @@ void SslTransportImpl::StartRead(const boost::asio::mutable_buffers_1& buf,
 }
 
 void SslTransportImpl::StartWrite(const boost::asio::const_buffers_1& buf,
-                                  WriteCallbackType callback) {
+                                  const WriteCallbackType& callback) {
   boost::asio::async_write(ssl_sock_, buf, callback);
 }
 
-void SslTransportImpl::StartClose(CloseCallbackType callback) {
+void SslTransportImpl::StartClose(const CloseCallbackType& callback) {
   // openssl will crash if the socket is destroyed before shutdown operation
   // completes
   auto self = shared_from_this();
@@ -53,7 +53,7 @@ void SslTransportImpl::StartClose(CloseCallbackType callback) {
 }
 
 void SslTransportFactoryImpl::StartAccept(EndpointType endpoint,
-                                          AcceptCallbackType callback) {
+                                          const AcceptCallbackType& callback) {
   auto acceptor =
       std::make_shared<ip::tcp::acceptor>(*io_service_ptr_, endpoint);
   acceptor->set_option(ip::tcp::no_delay(true));
@@ -63,7 +63,7 @@ void SslTransportFactoryImpl::StartAccept(EndpointType endpoint,
 
 void SslTransportFactoryImpl::DoAccept(
     const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
-    AcceptCallbackType callback) {
+    const AcceptCallbackType& callback) {
   std::shared_ptr<SslTransportImpl> transport(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
 
@@ -88,8 +88,8 @@ void SslTransportFactoryImpl::DoAccept(
       });
 }
 
-void SslTransportFactoryImpl::StartConnect(EndpointType endpoint,
-                                           ConnectCallbackType callback) {
+void SslTransportFactoryImpl::StartConnect(
+    EndpointType endpoint, const ConnectCallbackType& callback) {
   std::shared_ptr<SslTransportImpl> transport(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
   transport->ssl_sock_.lowest_layer().async_connect(

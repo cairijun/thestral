@@ -37,7 +37,7 @@ std::shared_ptr<MockTransport> MockTransport::New(
 }
 
 void MockTransport::StartRead(const asio::mutable_buffers_1& buf,
-                              ReadCallbackType callback,
+                              const ReadCallbackType& callback,
                               bool allow_short_read) {
   auto len = asio::buffer_copy(buf, asio::buffer(read_buf));
   read_buf = read_buf.substr(len);
@@ -48,13 +48,13 @@ void MockTransport::StartRead(const asio::mutable_buffers_1& buf,
 }
 
 void MockTransport::StartWrite(const asio::const_buffers_1& buf,
-                               WriteCallbackType callback) {
+                               const WriteCallbackType& callback) {
   auto p = asio::buffer_cast<const char*>(buf);
   write_buf.append(p, p + asio::buffer_size(buf));
   io_service_ptr->post(std::bind(callback, ec, asio::buffer_size(buf)));
 }
 
-void MockTransport::StartClose(CloseCallbackType callback) {
+void MockTransport::StartClose(const CloseCallbackType& callback) {
   if (closed) {
     io_service_ptr->post(std::bind(callback, ec));
   } else {
@@ -79,13 +79,13 @@ MockTcpTransportFactory::EndpointType MockTcpTransportFactory::PopEndpoint() {
 }
 
 void MockTcpTransportFactory::StartAccept(EndpointType endpoint,
-                                          AcceptCallbackType callback) {
+                                          const AcceptCallbackType& callback) {
   endpoints_.push(endpoint);
   io_service_ptr_->post(
       std::bind(&MockTcpTransportFactory::AcceptOne, this, callback));
 }
 
-void MockTcpTransportFactory::AcceptOne(AcceptCallbackType callback) {
+void MockTcpTransportFactory::AcceptOne(const AcceptCallbackType& callback) {
   if (transports_.empty()) {
     callback(
         boost::asio::error::make_error_code(boost::asio::error::bad_descriptor),
@@ -100,8 +100,8 @@ void MockTcpTransportFactory::AcceptOne(AcceptCallbackType callback) {
   }
 }
 
-void MockTcpTransportFactory::StartConnect(EndpointType endpoint,
-                                           ConnectCallbackType callback) {
+void MockTcpTransportFactory::StartConnect(
+    EndpointType endpoint, const ConnectCallbackType& callback) {
   endpoints_.push(endpoint);
   auto transport = transports_.front();
   transports_.pop();
@@ -130,7 +130,7 @@ Address MockUpstreamFactory::PopAddress() {
 }
 
 void MockUpstreamFactory::StartRequest(const Address& endpoint,
-                                       RequestCallbackType callback) {
+                                       const RequestCallbackType& callback) {
   addresses_.push(endpoint);
   auto transport = transports_.front();
   transports_.pop();

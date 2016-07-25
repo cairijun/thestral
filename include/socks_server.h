@@ -67,20 +67,20 @@ class SocksTcpServer : public ServerBase,
   /// Receives and replies auth packet on a new connection. Returns `false` when
   /// there is no need to accept more connections.
   bool HandleNewConnection(const ec_type& ec,
-                           std::shared_ptr<TransportBase> transport);
+                           const std::shared_ptr<TransportBase>& transport);
   /// Receives the request packet from the client and performs some checks.
   void ReceiveRequestPacket(const ec_type& ec,
-                            std::shared_ptr<TransportBase> transport);
+                            const std::shared_ptr<TransportBase>& transport);
   /// Establishes the upstream connection from a given request.
   void HandleRequest(RequestPacket request,
-                     std::shared_ptr<TransportBase> transport);
+                     const std::shared_ptr<TransportBase>& transport);
   /// Sends a ResponsePacket with a response code to the client than close the
   /// transport.
   void ResponseError(ResponseCode response_code,
-                     std::shared_ptr<TransportBase> transport);
+                     const std::shared_ptr<TransportBase>& transport);
   /// Relays data from a transport to another transport in a single direction.
-  void StartRelay(std::shared_ptr<TransportBase> from,
-                  std::shared_ptr<TransportBase> to);
+  void StartRelay(const std::shared_ptr<TransportBase>& from,
+                  const std::shared_ptr<TransportBase>& to);
 
   const std::string& bind_address_;
   const uint16_t bind_port_;

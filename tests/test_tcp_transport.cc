@@ -28,8 +28,9 @@
 
 #include "mocks.h"
 
-#define TRANSPORT_CALLBACK(...) \
-  [__VA_ARGS__](const ec_type& ec, std::shared_ptr<TransportBase> transport)
+#define TRANSPORT_CALLBACK(...)    \
+  [__VA_ARGS__](const ec_type& ec, \
+                const std::shared_ptr<TransportBase>& transport)
 #define BYTES_CALLBACK(...) [__VA_ARGS__](const ec_type& ec, size_t n_bytes)
 
 namespace thestral {

@@ -42,17 +42,17 @@ class SocksTransportWrapper : public TransportBase {
   Address GetLocalAddress() const override { return bound_address_; }
 
   void StartRead(const boost::asio::mutable_buffers_1& buf,
-                 ReadCallbackType callback,
+                 const ReadCallbackType& callback,
                  bool allow_short_read = false) override {
     wrapped_->StartRead(buf, callback, allow_short_read);
   }
 
   void StartWrite(const boost::asio::const_buffers_1& buf,
-                  WriteCallbackType callback) override {
+                  const WriteCallbackType& callback) override {
     wrapped_->StartWrite(buf, callback);
   }
 
-  void StartClose(CloseCallbackType callback) override {
+  void StartClose(const CloseCallbackType& callback) override {
     wrapped_->StartClose(callback);
   }
 
@@ -87,7 +87,7 @@ class SocksTcpUpstreamFactory
   }
 
   void StartRequest(const Address& endpoint,
-                    RequestCallbackType callback) override;
+                    const RequestCallbackType& callback) override;
 
   std::shared_ptr<boost::asio::io_service> get_io_service_ptr() const override {
     return transport_factory_->get_io_service_ptr();
@@ -114,11 +114,11 @@ class SocksTcpUpstreamFactory
         upstream_port_(upstream_port) {}
 
   void SendAuthRequest(const Address& endpoint,
-                       std::shared_ptr<TransportBase> transport,
-                       RequestCallbackType callback) const;
+                       const std::shared_ptr<TransportBase>& transport,
+                       const RequestCallbackType& callback) const;
   void SendSocksRequest(const Address& endpoint,
-                        std::shared_ptr<TransportBase> transport,
-                        RequestCallbackType callback) const;
+                        const std::shared_ptr<TransportBase>& transport,
+                        const RequestCallbackType& callback) const;
 };
 
 }  // namespace socks

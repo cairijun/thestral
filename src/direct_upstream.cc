@@ -20,8 +20,8 @@ namespace ip = boost::asio::ip;
 
 namespace thestral {
 
-void DirectTcpUpstreamFactory::StartRequest(const Address& address,
-                                            RequestCallbackType callback) {
+void DirectTcpUpstreamFactory::StartRequest(
+    const Address& address, const RequestCallbackType& callback) {
   switch (address.type) {
     case AddressType::kDomainName: {
       ip::tcp::resolver::query query(

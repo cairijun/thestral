@@ -38,11 +38,11 @@ class SslTransportImpl : public TcpTransport,
                          public std::enable_shared_from_this<SslTransportImpl> {
  public:
   void StartRead(const boost::asio::mutable_buffers_1& buf,
-                 ReadCallbackType callback,
+                 const ReadCallbackType& callback,
                  bool allow_short_read = false) override;
   void StartWrite(const boost::asio::const_buffers_1& buf,
-                  WriteCallbackType callback) override;
-  void StartClose(CloseCallbackType callback) override;
+                  const WriteCallbackType& callback) override;
+  void StartClose(const CloseCallbackType& callback) override;
   using TransportBase::StartClose;
 
   Address GetLocalAddress() const override {
@@ -70,9 +70,10 @@ class SslTransportFactoryImpl
   SslTransportFactoryImpl(const SslTransportFactoryImpl&) = delete;
   SslTransportFactoryImpl& operator=(const SslTransportFactoryImpl&) = delete;
 
-  void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
+  void StartAccept(EndpointType endpoint,
+                   const AcceptCallbackType& callback) override;
   void StartConnect(EndpointType endpoint,
-                    ConnectCallbackType callback) override;
+                    const ConnectCallbackType& callback) override;
   std::shared_ptr<TransportBase> TryConnect(
       boost::asio::ip::tcp::resolver::iterator& iter,
       ec_type& error_code) override;
@@ -90,7 +91,7 @@ class SslTransportFactoryImpl
       : io_service_ptr_(io_service_ptr), ssl_ctx_(std::move(ssl_ctx)) {}
 
   void DoAccept(const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
-                AcceptCallbackType callback);
+                const AcceptCallbackType& callback);
 
   const std::shared_ptr<boost::asio::io_service> io_service_ptr_;
   boost::asio::ssl::context ssl_ctx_;

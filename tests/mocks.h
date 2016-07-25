@@ -39,11 +39,11 @@ struct MockTransport : public TransportBase {
   Address GetLocalAddress() const override { return local_address; }
 
   void StartRead(const boost::asio::mutable_buffers_1& buf,
-                 ReadCallbackType callback,
+                 const ReadCallbackType& callback,
                  bool allow_short_read = false) override;
   void StartWrite(const boost::asio::const_buffers_1& buf,
-                  WriteCallbackType callback) override;
-  void StartClose(CloseCallbackType callback) override;
+                  const WriteCallbackType& callback) override;
+  void StartClose(const CloseCallbackType& callback) override;
 
   using TransportBase::StartRead;
   using TransportBase::StartWrite;
@@ -67,9 +67,10 @@ class MockTcpTransportFactory : public TcpTransportFactory {
       const std::string& read_buf = "");
   EndpointType PopEndpoint();
 
-  void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
+  void StartAccept(EndpointType endpoint,
+                   const AcceptCallbackType& callback) override;
   void StartConnect(EndpointType endpoint,
-                    ConnectCallbackType callback) override;
+                    const ConnectCallbackType& callback) override;
   std::shared_ptr<TransportBase> TryConnect(
       boost::asio::ip::tcp::resolver::iterator& iter,
       ec_type& error_code) override;
@@ -79,7 +80,7 @@ class MockTcpTransportFactory : public TcpTransportFactory {
   }
 
  private:
-  void AcceptOne(AcceptCallbackType callback);
+  void AcceptOne(const AcceptCallbackType& callback);
 
   std::shared_ptr<boost::asio::io_service> io_service_ptr_;
   std::queue<std::shared_ptr<MockTransport>> transports_;
@@ -97,7 +98,7 @@ class MockUpstreamFactory : public UpstreamFactoryBase {
   Address PopAddress();
 
   void StartRequest(const Address& endpoint,
-                    RequestCallbackType callback) override;
+                    const RequestCallbackType& callback) override;
 
   std::shared_ptr<boost::asio::io_service> get_io_service_ptr() const override {
     return io_service_ptr_;

@@ -19,8 +19,9 @@
 namespace thestral {
 namespace socks {
 
-void AuthMethodList::StartCreateFrom(std::shared_ptr<TransportBase> transport,
-                                     CreateCallbackType callback) {
+void AuthMethodList::StartCreateFrom(
+    const std::shared_ptr<TransportBase>& transport,
+    const CreateCallbackType& callback) {
   auto header = std::make_shared<uint16_t>();
   transport->StartRead(header.get(), 2, [header, transport, callback](
                                             const ec_type& ec, size_t) {
@@ -39,7 +40,7 @@ void AuthMethodList::StartCreateFrom(std::shared_ptr<TransportBase> transport,
 }
 
 std::string AuthMethodList::ToString() const {
-  // TODO: check methods.size()
+  // TODO(richardtsai): check methods.size()
   std::string str{static_cast<char>(version),
                   static_cast<char>(methods.size())};
   for (auto m : methods) {
@@ -59,8 +60,9 @@ SocksAddress& SocksAddress::operator=(const Address& address) {
   return *this;
 }
 
-void SocksAddress::StartCreateFrom(std::shared_ptr<TransportBase> transport,
-                                   CreateCallbackType callback) {
+void SocksAddress::StartCreateFrom(
+    const std::shared_ptr<TransportBase>& transport,
+    const CreateCallbackType& callback) {
   auto packet = std::make_shared<SocksAddress>();
 
   transport->StartRead(
@@ -71,7 +73,7 @@ void SocksAddress::StartCreateFrom(std::shared_ptr<TransportBase> transport,
           return;
         }
         switch (packet->type) {
-          // TODO: use some cleaner and safer way to read into string
+          // TODO(richardtsai): use some cleaner and safer way to read into string
           // the extra 2 bytes specify the port number
           case AddressType::kIPv4:
             packet->host.resize(4 + 2);
@@ -104,9 +106,10 @@ void SocksAddress::StartCreateFrom(std::shared_ptr<TransportBase> transport,
       });
 }
 
-void SocksAddress::StartReadDomain(std::shared_ptr<SocksAddress> packet,
-                                   std::shared_ptr<TransportBase> transport,
-                                   CreateCallbackType callback) {
+void SocksAddress::StartReadDomain(
+    const std::shared_ptr<SocksAddress>& packet,
+    const std::shared_ptr<TransportBase>& transport,
+    const CreateCallbackType& callback) {
   // use the first byte of this->host to temporarily store the length
   packet->host.resize(1);
   transport->StartRead(&packet->host[0], 1, [packet, transport, callback](
@@ -137,7 +140,7 @@ void SocksAddress::ExtractPortFromHost() {
 std::string SocksAddress::ToString() const {
   std::string str{static_cast<char>(type)};
   if (type == AddressType::kDomainName) {
-    // TODO: check host length
+    // TODO(richardtsai): check host length
     str.push_back(static_cast<char>(host.size()));
   }
   str.append(host);

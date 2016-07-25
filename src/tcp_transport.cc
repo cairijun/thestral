@@ -38,7 +38,7 @@ Address TcpTransportImpl::GetLocalAddress() const {
 }
 
 void TcpTransportImpl::StartRead(const boost::asio::mutable_buffers_1& buf,
-                                 ReadCallbackType callback,
+                                 const ReadCallbackType& callback,
                                  bool allow_short_read) {
   if (allow_short_read) {
     socket_.async_read_some(buf, callback);
@@ -48,11 +48,11 @@ void TcpTransportImpl::StartRead(const boost::asio::mutable_buffers_1& buf,
 }
 
 void TcpTransportImpl::StartWrite(const boost::asio::const_buffers_1& buf,
-                                  WriteCallbackType callback) {
+                                  const WriteCallbackType& callback) {
   boost::asio::async_write(socket_, buf, callback);
 }
 
-void TcpTransportImpl::StartClose(CloseCallbackType callback) {
+void TcpTransportImpl::StartClose(const CloseCallbackType& callback) {
   ec_type ec;
   socket_.shutdown(ip::tcp::socket::shutdown_both, ec);
   if (ec) {
@@ -64,7 +64,7 @@ void TcpTransportImpl::StartClose(CloseCallbackType callback) {
 }
 
 void TcpTransportFactoryImpl::StartAccept(EndpointType endpoint,
-                                          AcceptCallbackType callback) {
+                                          const AcceptCallbackType& callback) {
   auto acceptor =
       std::make_shared<ip::tcp::acceptor>(*io_service_ptr_, endpoint);
   acceptor->set_option(ip::tcp::no_delay(true));
@@ -72,8 +72,8 @@ void TcpTransportFactoryImpl::StartAccept(EndpointType endpoint,
   DoAccept(acceptor, callback);
 }
 
-void TcpTransportFactoryImpl::StartConnect(EndpointType endpoint,
-                                           ConnectCallbackType callback) {
+void TcpTransportFactoryImpl::StartConnect(
+    EndpointType endpoint, const ConnectCallbackType& callback) {
   auto transport = NewTransport();
   transport->GetUnderlyingSocket().async_connect(
       endpoint, [transport, callback](const ec_type& ec) {
@@ -89,7 +89,7 @@ void TcpTransportFactoryImpl::StartConnect(EndpointType endpoint,
 
 void TcpTransportFactoryImpl::DoAccept(
     const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
-    AcceptCallbackType callback) {
+    const AcceptCallbackType& callback) {
   auto transport = NewTransport();
   auto self = shared_from_this();
   acceptor->async_accept(

@@ -45,7 +45,7 @@ class DirectTcpUpstreamFactory
   }
 
   void StartRequest(const Address& address,
-                    RequestCallbackType callback) override;
+                    const RequestCallbackType& callback) override;
 
  private:
   DirectTcpUpstreamFactory(

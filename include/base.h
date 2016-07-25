@@ -49,13 +49,13 @@ class TransportBase {
   /// @param allow_short_read If true, the operation may complete before the
   /// buffer is full.
   virtual void StartRead(const boost::asio::mutable_buffers_1& buf,
-                         ReadCallbackType callback,
+                         const ReadCallbackType& callback,
                          bool allow_short_read = false) = 0;
   /// Starts an asynchronous writing opeation.
   virtual void StartWrite(const boost::asio::const_buffers_1& buf,
-                          WriteCallbackType callback) = 0;
+                          const WriteCallbackType& callback) = 0;
   /// Starts an asynchronous closing opeation.
-  virtual void StartClose(CloseCallbackType callback) = 0;
+  virtual void StartClose(const CloseCallbackType& callback) = 0;
 
   /// Convenience function for constructing and reading into a buffer.
   template <
@@ -64,7 +64,7 @@ class TransportBase {
           !(std::is_same<T, boost::asio::mutable_buffers_1&>::value ||
             std::is_convertible<T, boost::asio::mutable_buffers_1>::value),
           int>::type = 0>
-  void StartRead(T&& data, ReadCallbackType callback,
+  void StartRead(T&& data, const ReadCallbackType& callback,
                  bool allow_short_read = false) {
     StartRead(boost::asio::buffer(std::forward<T>(data)), callback,
               allow_short_read);
@@ -73,7 +73,7 @@ class TransportBase {
   /// Convenience function for constructing and reading into a buffer of
   /// specific size
   template <typename T>
-  void StartRead(T&& data, std::size_t size, ReadCallbackType callback,
+  void StartRead(T&& data, std::size_t size, const ReadCallbackType& callback,
                  bool allow_short_read = false) {
     StartRead(boost::asio::buffer(std::forward<T>(data), size), callback,
               allow_short_read);
@@ -85,7 +85,7 @@ class TransportBase {
                 !(std::is_same<T, boost::asio::const_buffers_1&>::value ||
                   std::is_convertible<T, boost::asio::const_buffers_1>::value),
                 int>::type = 0>
-  void StartWrite(T&& data, WriteCallbackType callback) {
+  void StartWrite(T&& data, const WriteCallbackType& callback) {
     // asio::buffer() may create a `mutable_buffers_1`, which is not implicitly
     // convertible to `const_buffers_1`, so an explicit conversion is required
     StartWrite(boost::asio::const_buffers_1(
@@ -96,7 +96,8 @@ class TransportBase {
   /// Convenience function for constructing and writing from a buffer of
   /// specific size
   template <typename T>
-  void StartWrite(T&& data, std::size_t size, WriteCallbackType callback) {
+  void StartWrite(T&& data, std::size_t size,
+                  const WriteCallbackType& callback) {
     StartWrite(boost::asio::buffer(std::forward<T>(data), size), callback);
   }
 
@@ -112,9 +113,11 @@ template <typename Endpoint>
 class TransportFactoryBase {
  public:
   typedef Endpoint EndpointType;
-  typedef std::function<bool(const ec_type&, std::shared_ptr<TransportBase>)>
+  typedef std::function<bool(const ec_type&,
+                             const std::shared_ptr<TransportBase>&)>
       AcceptCallbackType;
-  typedef std::function<void(const ec_type&, std::shared_ptr<TransportBase>)>
+  typedef std::function<void(const ec_type&,
+                             const std::shared_ptr<TransportBase>&)>
       ConnectCallbackType;
 
   virtual ~TransportFactoryBase() {}
@@ -122,10 +125,11 @@ class TransportFactoryBase {
   /// Accepts connections from a specific endpoint asynchronously. The callback
   /// should return a boolean value indicating whether the factory should accept
   /// more connections.
-  virtual void StartAccept(Endpoint endpoint, AcceptCallbackType callback) = 0;
+  virtual void StartAccept(Endpoint endpoint,
+                           const AcceptCallbackType& callback) = 0;
   /// Connects to a specific endpoint asynchronous.
   virtual void StartConnect(Endpoint endpoint,
-                            ConnectCallbackType callback) = 0;
+                            const ConnectCallbackType& callback) = 0;
 
   /// Returns a pointer to the `io_service` bound with this factory.
   virtual std::shared_ptr<boost::asio::io_service> get_io_service_ptr()
@@ -137,7 +141,8 @@ class TransportFactoryBase {
 /// establish connections to target endpoints.
 class UpstreamFactoryBase {
  public:
-  typedef std::function<void(const ec_type&, std::shared_ptr<TransportBase>)>
+  typedef std::function<void(const ec_type&,
+                             const std::shared_ptr<TransportBase>&)>
       RequestCallbackType;
 
   virtual ~UpstreamFactoryBase() {}
@@ -145,7 +150,7 @@ class UpstreamFactoryBase {
   /// Requests the upstream to establish a connection to a specific endpoint
   /// asynchronously.
   virtual void StartRequest(const Address& endpoint,
-                            RequestCallbackType callback) = 0;
+                            const RequestCallbackType& callback) = 0;
 
   /// Returns a pointer to the `io_service` bound with this factory.
   virtual std::shared_ptr<boost::asio::io_service> get_io_service_ptr()
@@ -166,15 +171,16 @@ class ServerBase {
 /// should implement a static asynchronous creation function as follows.
 /// ```cpp
 /// typedef std::function<void(const ec_type&, PacketType)> CreateCallbackType;
-/// static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
-///                             CreateCallbackType callback);
+/// static void StartCreateFrom(const std::shared_ptr<TransportBase>& transport,
+///                             const CreateCallbackType& callback);
 /// ```
 class PacketBase {
  public:
   /// Writes the packet into the transport object asynchronously. The default
   /// implementation writes the bytes returned by ToString().
-  virtual void StartWriteTo(std::shared_ptr<TransportBase> transport,
-                            TransportBase::WriteCallbackType callback) const;
+  virtual void StartWriteTo(
+      const std::shared_ptr<TransportBase>& transport,
+      const TransportBase::WriteCallbackType& callback) const;
   /// Checks the correctness of the fields of the packet. The default
   /// implementation always returns `true`.
   virtual bool Validate() const { return true; }
@@ -196,8 +202,8 @@ struct PacketWithHeader : PacketBase {
   Header header;  ///< The header part of the whole packet.
   Body body;      ///< The body part of the whole packet.
 
-  static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
-                              CreateCallbackType callback);
+  static void StartCreateFrom(const std::shared_ptr<TransportBase>& transport,
+                              const CreateCallbackType& callback);
 
   bool Validate() const override;
   std::string ToString() const override;
@@ -210,7 +216,8 @@ bool PacketWithHeader<Header, Body>::Validate() const {
 
 template <typename Header, typename Body>
 void PacketWithHeader<Header, Body>::StartCreateFrom(
-    std::shared_ptr<TransportBase> transport, CreateCallbackType callback) {
+    const std::shared_ptr<TransportBase>& transport,
+    const CreateCallbackType& callback) {
   Header::StartCreateFrom(
       transport, [transport, callback](const ec_type& ec, Header header) {
         if (ec) {
@@ -245,7 +252,7 @@ class PacketWithSize : public PacketBase {
   typedef std::function<void(const ec_type&, PacketType)> CreateCallbackType;
 
   static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
-                              CreateCallbackType callback);
+                              const CreateCallbackType& callback);
 
   std::string ToString() const override;
   /// Writes the bytes representation to a pre-allocated memory area.
@@ -256,16 +263,17 @@ class PacketWithSize : public PacketBase {
 
 template <typename PacketType, size_t N>
 void PacketWithSize<PacketType, N>::StartCreateFrom(
-    std::shared_ptr<TransportBase> transport, CreateCallbackType callback) {
+    std::shared_ptr<TransportBase> transport,
+    const CreateCallbackType& callback) {
   auto data = std::make_shared<std::array<char, N>>();
-  transport->StartRead(
-      *data, [callback, data](const ec_type& error_code, size_t bytes_read) {
-        PacketType packet;
-        if (!error_code) {
-          packet.FromBytes(data->data());
-        }
-        callback(error_code, packet);
-      });
+  transport->StartRead(*data,
+                       [callback, data](const ec_type& error_code, size_t) {
+                         PacketType packet;
+                         if (!error_code) {
+                           packet.FromBytes(data->data());
+                         }
+                         callback(error_code, packet);
+                       });
 }
 
 template <typename PacketType, size_t N>

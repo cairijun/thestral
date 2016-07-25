@@ -55,7 +55,8 @@ BOOST_AUTO_TEST_CASE(test_request) {
 
   bool called_ipv4 = false;
   upstream->StartRequest(
-      ipv4, [&](const ec_type& ec, std::shared_ptr<TransportBase> transport) {
+      ipv4,
+      [&](const ec_type& ec, const std::shared_ptr<TransportBase>& transport) {
         called_ipv4 = true;
         BOOST_TEST(!ec);
         BOOST_CHECK_EQUAL(transport_1, transport);

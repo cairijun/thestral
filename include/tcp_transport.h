@@ -57,11 +57,11 @@ class TcpTransportImpl : public TcpTransport {
  public:
   Address GetLocalAddress() const override;
   void StartRead(const boost::asio::mutable_buffers_1& buf,
-                 ReadCallbackType callback,
+                 const ReadCallbackType& callback,
                  bool allow_short_read = false) override;
   void StartWrite(const boost::asio::const_buffers_1& buf,
-                  WriteCallbackType callback) override;
-  void StartClose(CloseCallbackType callback) override;
+                  const WriteCallbackType& callback) override;
+  void StartClose(const CloseCallbackType& callback) override;
   using TransportBase::StartClose;
 
   boost::asio::ip::tcp::socket& GetUnderlyingSocket() override {
@@ -90,9 +90,10 @@ class TcpTransportFactoryImpl
         new TcpTransportFactoryImpl(io_service_ptr));
   }
 
-  void StartAccept(EndpointType endpoint, AcceptCallbackType callback) override;
+  void StartAccept(EndpointType endpoint,
+                   const AcceptCallbackType& callback) override;
   void StartConnect(EndpointType endpoint,
-                    ConnectCallbackType callback) override;
+                    const ConnectCallbackType& callback) override;
   std::shared_ptr<TransportBase> TryConnect(
       boost::asio::ip::tcp::resolver::iterator& iter,
       ec_type& error_code) override;
@@ -114,7 +115,7 @@ class TcpTransportFactoryImpl
   }
 
   void DoAccept(const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
-                AcceptCallbackType callback);
+                const AcceptCallbackType& callback);
 };
 
 }  // namespace impl
