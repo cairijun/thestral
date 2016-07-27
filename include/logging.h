@@ -36,6 +36,9 @@ namespace impl {
 /// attributes with string keys.
 class LogRecord {
  public:
+  LogRecord(Level level, const std::map<std::string, std::string>& attributes)
+      : level_(level), attributes_(attributes) {}
+
   /// Sets an attribute of the log record.
   void SetAttribute(const std::string& name, const std::string& value) {
     attributes_[name] = value;
@@ -50,13 +53,8 @@ class LogRecord {
   }
 
  private:
-  friend class ::thestral::logging::Logger;
-
   Level level_;
   std::map<std::string, std::string> attributes_;
-
-  LogRecord(Level level, const std::map<std::string, std::string>& attributes)
-      : level_(level), attributes_(attributes) {}
 };
 
 /// Base class of log sinks. A log sink accepts LogRecord objects, and stores
@@ -119,6 +117,8 @@ impl::LogSinkBase& add_file_log_sink(const std::string& filename,
                                      bool truncate = false);
 /// Adds a log sink writing to standard error file.
 impl::LogSinkBase& add_stderr_log_sink();
+/// Adds a customized log sink.
+impl::LogSinkBase& add_log_sink(std::unique_ptr<impl::LogSinkBase> sink);
 
 class FatalEvent : public std::runtime_error {
  public:

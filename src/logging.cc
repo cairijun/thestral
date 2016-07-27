@@ -131,10 +131,19 @@ impl::LogSinkBase& add_stderr_log_sink() {
   return *impl::g_log_sinks.back();
 }
 
+impl::LogSinkBase& add_log_sink(std::unique_ptr<impl::LogSinkBase> sink) {
+  impl::g_log_sinks.emplace_back(std::move(sink));
+  return *impl::g_log_sinks.back();
+}
+
 Logger::Logger(const std::string& name) { SetName(name); }
 
 void Logger::SetName(const std::string& name) {
   attributes_["logger_name"] = name;
+}
+
+void Logger::SetAttribute(const std::string& name, const std::string& value) {
+  attributes_[name] = value;
 }
 
 std::string Logger::GetName() const { return attributes_.at("logger_name"); }

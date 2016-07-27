@@ -18,7 +18,7 @@ if(BUILD_TESTING AND ENABLE_COVERAGE AND UNIX)
   add_custom_target(
       cov
       COMMAND ${CMAKE_COMMAND} -E echo "Cleaning existing data..."
-      COMMAND find ${CMAKE_BINARY_DIR} -type f -name *.gcda -delete
+      COMMAND find ${CMAKE_BINARY_DIR} -type f "\\(" -name *.gcda -or -name *.gcna "\\)" -delete
       COMMAND ${CMAKE_COMMAND} -E echo "Generating coverage base line data..."
       COMMAND lcov -i -q -c -d ${CMAKE_SOURCE_DIR} --no-external -o cov_base.info
       COMMAND ${CMAKE_COMMAND} -E echo "Testing..."
