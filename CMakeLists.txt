@@ -34,6 +34,7 @@ include_directories(
 set(SRCS
     src/base.cc
     src/direct_upstream.cc
+    src/logging.cc
     src/socks.cc
     src/socks_server.cc
     src/socks_upstream.cc
