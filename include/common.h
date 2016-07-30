@@ -31,28 +31,30 @@
 
 #define _THESTRAL_DEFINE_ENUM_OUTPUT_1(type_name, name) \
   case type_name::name:                                 \
-    os << #type_name "::" BOOST_PP_STRINGIZE(name);     \
+    return #type_name "::" BOOST_PP_STRINGIZE(name);    \
     break;
 #define _THESTRAL_DEFINE_ENUM_OUTPUT(r, type_name, elm) \
   _THESTRAL_DEFINE_ENUM_OUTPUT_1(type_name, BOOST_PP_TUPLE_ELEM(0, elm))
 
-#define THESTRAL_DEFINE_ENUM(type_name, base_type, ...)                     \
-  enum class type_name : base_type {                                        \
-    BOOST_PP_SEQ_FOR_EACH(_THESTRAL_DEFINE_ENUM_ELEMS, $,                   \
-                          BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))            \
-  };                                                                        \
-  template <typename C, typename T>                                         \
-  std::basic_ostream<C, T>& operator<<(std::basic_ostream<C, T>& os,        \
-                                       type_name val) {                     \
-    switch (val) {                                                          \
-      BOOST_PP_SEQ_FOR_EACH(_THESTRAL_DEFINE_ENUM_OUTPUT, type_name,        \
-                            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))          \
-      default:                                                              \
-        os << #type_name " (INVALID VALUE: " << static_cast<base_type>(val) \
-           << ")";                                                          \
-        break;                                                              \
-    }                                                                       \
-    return os;                                                              \
+#define THESTRAL_DEFINE_ENUM(type_name, base_type, ...)              \
+  enum class type_name : base_type {                                 \
+    BOOST_PP_SEQ_FOR_EACH(_THESTRAL_DEFINE_ENUM_ELEMS, $,            \
+                          BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))     \
+  };                                                                 \
+  static inline std::string to_string(type_name val) {               \
+    switch (val) {                                                   \
+      BOOST_PP_SEQ_FOR_EACH(_THESTRAL_DEFINE_ENUM_OUTPUT, type_name, \
+                            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))   \
+      default:                                                       \
+        return #type_name " (INVALID VALUE: " +                      \
+               std::to_string(static_cast<base_type>(val)) + ")";    \
+    }                                                                \
+  }                                                                  \
+  template <typename C, typename T>                                  \
+  std::basic_ostream<C, T>& operator<<(std::basic_ostream<C, T>& os, \
+                                       type_name val) {              \
+    os << to_string(val);                                            \
+    return os;                                                       \
   }
 
 namespace thestral {

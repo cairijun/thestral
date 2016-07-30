@@ -56,6 +56,7 @@ namespace impl {
 class TcpTransportImpl : public TcpTransport {
  public:
   Address GetLocalAddress() const override;
+  Address GetRemoteAddress() const override;
   void StartRead(const boost::asio::mutable_buffers_1& buf,
                  const ReadCallbackType& callback,
                  bool allow_short_read = false) override;

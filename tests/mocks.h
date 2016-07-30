@@ -37,6 +37,7 @@ struct MockTransport : public TransportBase {
       const std::string& read_buf = "");
 
   Address GetLocalAddress() const override { return local_address; }
+  Address GetRemoteAddress() const override { return remote_address; }
 
   void StartRead(const boost::asio::mutable_buffers_1& buf,
                  const ReadCallbackType& callback,
@@ -51,6 +52,7 @@ struct MockTransport : public TransportBase {
 
   std::shared_ptr<boost::asio::io_service> io_service_ptr;
   Address local_address;
+  Address remote_address;
   std::string read_buf;
   std::string write_buf;
   ec_type ec;

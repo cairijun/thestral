@@ -45,6 +45,8 @@ class TransportBase {
 
   /// Returns the bound local address of the transport.
   virtual Address GetLocalAddress() const = 0;
+  /// Returns the address of the remote peer.
+  virtual Address GetRemoteAddress() const = 0;
   /// Starts an asynchronous reading opeation.
   /// @param allow_short_read If true, the operation may complete before the
   /// buffer is full.

@@ -31,6 +31,8 @@ namespace impl {
 
 std::string level_to_string(Level level) {
   switch (level) {
+    case Level::DEBUG:
+      return "D";
     case Level::INFO:
       return "I";
     case Level::WARN:
@@ -197,6 +199,14 @@ Logger::LogRecordProxy Logger::Log(Level level, const char* format, ...) const {
   va_list args;
   va_start(args, format);
   auto record = Log(level, format, args);
+  va_end(args);
+  return record;
+}
+
+Logger::LogRecordProxy Logger::Debug(const char* format, ...) const {
+  va_list args;
+  va_start(args, format);
+  auto record = Log(Level::DEBUG, format, args);
   va_end(args);
   return record;
 }

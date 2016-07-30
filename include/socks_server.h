@@ -23,6 +23,7 @@
 #include <boost/asio.hpp>
 
 #include "base.h"
+#include "logging.h"
 #include "socks.h"
 #include "socks_upstream.h"
 #include "tcp_transport.h"
@@ -54,6 +55,8 @@ class SocksTcpServer : public ServerBase,
   /// inefficiency when there are lots of connection, while a small buffer might
   /// lead to increase in delay.
   constexpr static size_t kRelayBufferSize = 0x4000;
+
+  static logging::Logger LOG;
 
   SocksTcpServer(
       const std::string& bind_address, uint16_t bind_port,

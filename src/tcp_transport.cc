@@ -37,6 +37,10 @@ Address TcpTransportImpl::GetLocalAddress() const {
   return Address::FromAsioEndpoint(socket_.local_endpoint());
 }
 
+Address TcpTransportImpl::GetRemoteAddress() const {
+  return Address::FromAsioEndpoint(socket_.remote_endpoint());
+}
+
 void TcpTransportImpl::StartRead(const boost::asio::mutable_buffers_1& buf,
                                  const ReadCallbackType& callback,
                                  bool allow_short_read) {

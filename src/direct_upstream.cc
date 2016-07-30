@@ -20,8 +20,12 @@ namespace ip = boost::asio::ip;
 
 namespace thestral {
 
+logging::Logger DirectTcpUpstreamFactory::LOG("DirectTcpUpstreamFactory");
+
 void DirectTcpUpstreamFactory::StartRequest(
     const Address& address, const RequestCallbackType& callback) {
+  LOG.Info("sending request to address %s, port %u", address.host.c_str(),
+           address.port);
   switch (address.type) {
     case AddressType::kDomainName: {
       ip::tcp::resolver::query query(
@@ -29,10 +33,13 @@ void DirectTcpUpstreamFactory::StartRequest(
           ip::tcp::resolver::query::address_configured |
               ip::tcp::resolver::query::numeric_service);
       auto self = shared_from_this();
+      LOG.Debug("resolving address %s", address.host.c_str());
       resolver_.async_resolve(
-          query, [self, callback](const ec_type& ec,
-                                  ip::tcp::resolver::iterator iter) {
+          query, [self, address, callback](const ec_type& ec,
+                                           ip::tcp::resolver::iterator iter) {
             if (ec) {
+              self->LOG.Error("failed to resolve address %s, reason: %s",
+                              address.host.c_str(), ec.message().c_str());
               callback(ec, nullptr);
             } else {
               // more than one results?
@@ -62,6 +69,7 @@ void DirectTcpUpstreamFactory::StartRequest(
     default:
       // unknown address type
       // TODO(richardtsai): report error to the callback
+      LOG.Error("unknown address type: %s", to_string(address.type).c_str());
       callback(ec_type(), nullptr);
       break;
   }

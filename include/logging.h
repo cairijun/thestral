@@ -29,7 +29,7 @@ namespace logging {
 
 class Logger;
 
-enum class Level { INFO, WARN, ERROR, FATAL };
+enum class Level { DEBUG, INFO, WARN, ERROR, FATAL };
 
 namespace impl {
 /// A record of logging. A LogRecord is comprised of a Level and a collection of
@@ -166,6 +166,7 @@ class Logger {
   /// the log, and `message` is the log message. If a log of level FATAL is
   /// created, a FatalEvent exception will be thrown.
   LogRecordProxy Log(Level level, const char* format, ...) const;
+  LogRecordProxy Debug(const char* format, ...) const;
   LogRecordProxy Info(const char* format, ...) const;
   LogRecordProxy Warn(const char* format, ...) const;
   LogRecordProxy Error(const char* format, ...) const;

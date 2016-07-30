@@ -23,6 +23,7 @@
 
 #include "base.h"
 #include "common.h"
+#include "logging.h"
 #include "tcp_transport.h"
 
 namespace thestral {
@@ -48,6 +49,8 @@ class DirectTcpUpstreamFactory
                     const RequestCallbackType& callback) override;
 
  private:
+  static logging::Logger LOG;
+
   DirectTcpUpstreamFactory(
       const std::shared_ptr<TcpTransportFactory>& transport_factory)
       : transport_factory_(transport_factory),

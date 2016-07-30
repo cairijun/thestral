@@ -27,6 +27,7 @@
 
 #include "base.h"
 #include "common.h"
+#include "logging.h"
 #include "socks.h"
 #include "tcp_transport.h"
 
@@ -40,6 +41,10 @@ namespace impl {
 class SocksTransportWrapper : public TransportBase {
  public:
   Address GetLocalAddress() const override { return bound_address_; }
+
+  Address GetRemoteAddress() const override {
+    return wrapped_->GetRemoteAddress();
+  }
 
   void StartRead(const boost::asio::mutable_buffers_1& buf,
                  const ReadCallbackType& callback,
@@ -94,6 +99,8 @@ class SocksTcpUpstreamFactory
   }
 
  private:
+  static logging::Logger LOG;
+
   /// The transport factory for creating connections to the upstream host.
   std::shared_ptr<TcpTransportFactory> transport_factory_;
   const std::string upstream_host_;

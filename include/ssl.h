@@ -49,6 +49,10 @@ class SslTransportImpl : public TcpTransport,
     return Address::FromAsioEndpoint(ssl_sock_.next_layer().local_endpoint());
   }
 
+  Address GetRemoteAddress() const override {
+    return Address::FromAsioEndpoint(ssl_sock_.next_layer().remote_endpoint());
+  }
+
   boost::asio::ip::tcp::socket& GetUnderlyingSocket() override {
     return ssl_sock_.next_layer();
   }
