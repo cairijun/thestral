@@ -35,14 +35,14 @@ BOOST_AUTO_TEST_SUITE(test_ssl_transport);
 BOOST_AUTO_TEST_CASE(test_ssl_transport) {
   auto io_service = std::make_shared<boost::asio::io_service>();
   auto server_transport_factory = SslTransportFactoryBuilder()
-                                      .LoadCaFile("RTSAI ROOT CA.pem")
+                                      .LoadCaFile("ca.pem")
                                       .LoadCertChain("test.server.pem")
                                       .LoadPrivateKey("test.server.key.pem")
                                       .LoadDhParams("dh2048.pem")
                                       .SetVerifyPeer(true)
                                       .Build(io_service);
   auto client_transport_factory = SslTransportFactoryBuilder()
-                                      .LoadCaFile("RTSAI ROOT CA.pem")
+                                      .LoadCaFile("ca.pem")
                                       .LoadCertChain("test.pem")
                                       .LoadPrivateKey("test.key.pem")
                                       .SetVerifyPeer(true)
