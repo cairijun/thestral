@@ -39,7 +39,7 @@ void AuthMethodList::StartCreateFrom(
   });
 }
 
-std::string AuthMethodList::ToString() const {
+std::string AuthMethodList::Serialize() const {
   // TODO(richardtsai): check methods.size()
   std::string str{static_cast<char>(version),
                   static_cast<char>(methods.size())};
@@ -73,8 +73,8 @@ void SocksAddress::StartCreateFrom(
           return;
         }
         switch (packet->type) {
-          // TODO(richardtsai): use some cleaner and safer way to read into string
-          // the extra 2 bytes specify the port number
+          // TODO(richardtsai): use some cleaner and safer way to read into
+          // string the extra 2 bytes specify the port number
           case AddressType::kIPv4:
             packet->host.resize(4 + 2);
             transport->StartRead(
@@ -137,7 +137,7 @@ void SocksAddress::ExtractPortFromHost() {
   host.resize(host.size() - 2);
 }
 
-std::string SocksAddress::ToString() const {
+std::string SocksAddress::Serialize() const {
   std::string str{static_cast<char>(type)};
   if (type == AddressType::kDomainName) {
     // TODO(richardtsai): check host length

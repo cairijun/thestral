@@ -184,7 +184,7 @@ class ServerBase {
 class PacketBase {
  public:
   /// Writes the packet into the transport object asynchronously. The default
-  /// implementation writes the bytes returned by ToString().
+  /// implementation writes the bytes returned by Serialize().
   virtual void StartWriteTo(
       const std::shared_ptr<TransportBase>& transport,
       const TransportBase::WriteCallbackType& callback) const;
@@ -192,7 +192,7 @@ class PacketBase {
   /// implementation always returns `true`.
   virtual bool Validate() const { return true; }
   /// Returns a string representation of the packet.
-  virtual std::string ToString() const = 0;
+  virtual std::string Serialize() const = 0;
 };
 
 /// Class template for packets with two consecutive parts, a header and a body.
@@ -213,7 +213,7 @@ struct PacketWithHeader : PacketBase {
                               const CreateCallbackType& callback);
 
   bool Validate() const override;
-  std::string ToString() const override;
+  std::string Serialize() const override;
 };
 
 template <typename Header, typename Body>
@@ -244,8 +244,8 @@ void PacketWithHeader<Header, Body>::StartCreateFrom(
 }
 
 template <typename Header, typename Body>
-std::string PacketWithHeader<Header, Body>::ToString() const {
-  return header.ToString() + body.ToString();
+std::string PacketWithHeader<Header, Body>::Serialize() const {
+  return header.Serialize() + body.Serialize();
 }
 
 /// Class template for fixed size packet. The subclasses only need to implement
@@ -261,7 +261,7 @@ class PacketWithSize : public PacketBase {
   static void StartCreateFrom(std::shared_ptr<TransportBase> transport,
                               const CreateCallbackType& callback);
 
-  std::string ToString() const override;
+  std::string Serialize() const override;
   /// Writes the bytes representation to a pre-allocated memory area.
   virtual void ToBytes(char* data) const = 0;
   /// Fills the packet fields from bytes.
@@ -284,7 +284,7 @@ void PacketWithSize<PacketType, N>::StartCreateFrom(
 }
 
 template <typename PacketType, size_t N>
-std::string PacketWithSize<PacketType, N>::ToString() const {
+std::string PacketWithSize<PacketType, N>::Serialize() const {
   std::string data(N, '\0');
   ToBytes(&data[0]);
   return data;

@@ -21,7 +21,7 @@ namespace thestral {
 void PacketBase::StartWriteTo(
     const std::shared_ptr<TransportBase>& transport,
     const TransportBase::WriteCallbackType& callback) const {
-  auto data = std::make_shared<std::string>(ToString());
+  auto data = std::make_shared<std::string>(Serialize());
   transport->StartWrite(  // capture `data` to ensure it outlives this function
       *data, [callback, data](const ec_type& ec, size_t bytes_written) {
         callback(ec, bytes_written);

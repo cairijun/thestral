@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(test_auth_method_list_write) {
   AuthMethodList packet;
   packet.methods.push_back(AuthMethod::kNoAuth);
   std::string s{'\x05', '\x01', '\x00'};
-  BOOST_CHECK_EQUAL(s, packet.ToString());
+  BOOST_CHECK_EQUAL(s, packet.Serialize());
 
   bool called = false;
   packet.StartWriteTo(transport, PACKET_CALLBACK(size_t) {

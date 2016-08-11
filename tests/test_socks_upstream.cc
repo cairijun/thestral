@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(test_request) {
 
   for (int i = 0; i < n_clients; ++i) {
     transports.push_back(transport_factory->NewMockTransport(
-        p2.ToString() + p4.ToString() + data_to_downstream));
+        p2.Serialize() + p4.Serialize() + data_to_downstream));
 
     upstream->StartRequest(
         p3.body, [&](const ec_type& ec,
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(test_request) {
   BOOST_CHECK_EQUAL(57819, listened_on.port());
 
   for (auto& transport : transports) {
-    BOOST_CHECK_EQUAL(p1.ToString() + p3.ToString() + data_to_upstream,
+    BOOST_CHECK_EQUAL(p1.Serialize() + p3.Serialize() + data_to_upstream,
                       transport->write_buf);
   }
 }

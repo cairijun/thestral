@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(test_request) {
   auto downstream_transport_factory =
       std::make_shared<testing::MockTcpTransportFactory>(io_service);
   auto downstream_transport = downstream_transport_factory->NewMockTransport(
-      p1.ToString() + p3.ToString() + data_to_upstream);
+      p1.Serialize() + p3.Serialize() + data_to_upstream);
 
   auto upstream_factory =
       std::make_shared<testing::MockUpstreamFactory>(io_service);
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(test_request) {
   socks_server->Start();
   io_service->run();
 
-  BOOST_CHECK_EQUAL(p2.ToString() + p4.ToString() + data_to_downstream,
+  BOOST_CHECK_EQUAL(p2.Serialize() + p4.Serialize() + data_to_downstream,
                     downstream_transport->write_buf);
   BOOST_CHECK_EQUAL(data_to_upstream, upstream_transport->write_buf);
   BOOST_CHECK_EQUAL(p3.body, upstream_factory->PopAddress());

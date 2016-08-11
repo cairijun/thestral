@@ -53,7 +53,7 @@ struct AuthMethodList : PacketBase {
   static void StartCreateFrom(const std::shared_ptr<TransportBase>& transport,
                               const CreateCallbackType& callback);
 
-  std::string ToString() const override;
+  std::string Serialize() const override;
 };
 
 struct AuthMethodSelectPacket : PacketWithSize<AuthMethodSelectPacket, 2> {
@@ -116,7 +116,7 @@ struct SocksAddress : Address, PacketBase {
   static void StartCreateFrom(const std::shared_ptr<TransportBase>& transport,
                               const CreateCallbackType& callback);
 
-  std::string ToString() const override;
+  std::string Serialize() const override;
 
  private:
   static void StartReadDomain(const std::shared_ptr<SocksAddress>& packet,
