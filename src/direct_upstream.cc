@@ -24,8 +24,7 @@ logging::Logger DirectTcpUpstreamFactory::LOG("DirectTcpUpstreamFactory");
 
 void DirectTcpUpstreamFactory::StartRequest(
     const Address& address, const RequestCallbackType& callback) {
-  LOG.Info("sending request to address %s, port %u", address.host.c_str(),
-           address.port);
+  LOG.Info("sending request to %s", address.ToString().c_str());
   switch (address.type) {
     case AddressType::kDomainName: {
       ip::tcp::resolver::query query(

@@ -25,8 +25,7 @@ logging::Logger SocksTcpUpstreamFactory::LOG("SocksTcpUpstreamFactory");
 
 void SocksTcpUpstreamFactory::StartRequest(
     const Address& endpoint, const RequestCallbackType& callback) {
-  LOG.Info("starting a request to host %s, port: %u", endpoint.host.c_str(),
-           endpoint.port);
+  LOG.Info("starting a request to host %s", endpoint.ToString().c_str());
 
   ec_type ec;
   std::shared_ptr<TransportBase> transport;
@@ -170,8 +169,8 @@ void SocksTcpUpstreamFactory::SendSocksRequest(
             auto wrapped_transport =
                 std::make_shared<impl::SocksTransportWrapper>(transport,
                                                               packet.body);
-            LOG.Info("connection to %s, port: %u established",
-                     endpoint.host.c_str(), endpoint.port);
+            LOG.Info("connection to %s established",
+                     endpoint.ToString().c_str());
             callback(ec, wrapped_transport);  // finally, success!
           }
         });

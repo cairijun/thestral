@@ -66,9 +66,8 @@ bool SocksTcpServer::HandleNewConnection(
   }
 
   auto self = shared_from_this();
-  auto remote_address = transport->GetRemoteAddress();
-  LOG.Info("new incomming connection from %s, port: %u",
-           remote_address.host.c_str(), remote_address.port);
+  LOG.Info("new incomming connection %s",
+           transport->GetRemoteAddress().ToString().c_str());
   LOG.Debug("receiving auth request packet");
   AuthMethodList::StartCreateFrom(
       transport, [self, transport](const ec_type& ec, AuthMethodList packet) {
@@ -131,10 +130,9 @@ void SocksTcpServer::HandleRequest(
     RequestPacket request, const std::shared_ptr<TransportBase>& downstream) {
   Address downstream_address = downstream->GetRemoteAddress();
   LOG.Info(
-      "establishing connection to %s, port %u, "
-      "on behalf of downstream %s, port %u",
-      request.body.host.c_str(), request.body.port,
-      downstream_address.host.c_str(), downstream_address.port);
+      "establishing connection to %s, "
+      "on behalf of downstream %s",
+      request.body.ToString().c_str(), downstream_address.ToString().c_str());
 
   auto self = shared_from_this();
   upstream_factory_->StartRequest(
@@ -163,10 +161,10 @@ void SocksTcpServer::HandleRequest(
                   // start relay in both direction
                   Address downstream_address = downstream->GetRemoteAddress();
                   LOG.Info(
-                      "connection established to %s, port: %u, "
-                      "on behalf of downstream %s, port: %u, start relaying",
-                      request.body.host.c_str(), request.body.port,
-                      downstream_address.host.c_str(), downstream_address.port);
+                      "connection established to %s, "
+                      "on behalf of downstream %s, start relaying",
+                      request.body.ToString().c_str(),
+                      downstream_address.ToString().c_str());
                   self->StartRelay(downstream, upstream);
                   self->StartRelay(upstream, downstream);
                 }

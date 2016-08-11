@@ -19,8 +19,10 @@
 
 #include <cstdint>
 #include <iostream>
+#include <sstream>
 #include <string>
 
+#include <boost/asio/ip/address.hpp>
 #include <boost/preprocessor/seq.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/rem.hpp>
@@ -71,6 +73,33 @@ struct Address {
 
   bool operator==(const Address& other) const {
     return type == other.type && host == other.host && port == other.port;
+  }
+
+  std::string ToString() const {
+    std::ostringstream buf;
+    switch (type) {
+      case AddressType::kIPv4: {
+        boost::asio::ip::address_v4::bytes_type bytes;
+        host.copy(reinterpret_cast<char*>(bytes.data()), bytes.size());
+        boost::asio::ip::address_v4 addr(bytes);
+        buf << addr.to_string() << ':' << port;
+        break;
+      }
+      case AddressType::kIPv6: {
+        boost::asio::ip::address_v6::bytes_type bytes;
+        host.copy(reinterpret_cast<char*>(bytes.data()), bytes.size());
+        boost::asio::ip::address_v6 addr(bytes);
+        buf << '[' << addr.to_string() << "]:" << port;
+        break;
+      }
+      case AddressType::kDomainName: {
+        buf << host << ':' << port;
+        break;
+      }
+      default:
+        buf << "UNKNOWN ADDRESS TYPE";
+    }
+    return buf.str();
   }
 
   /// Creates an Address from an asio endpoint. The type of the returned object
