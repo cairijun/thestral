@@ -35,6 +35,7 @@ set(SRCS
     src/base.cc
     src/direct_upstream.cc
     src/logging.cc
+    src/main_app.cc
     src/socks.cc
     src/socks_server.cc
     src/socks_upstream.cc
