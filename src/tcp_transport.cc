@@ -99,7 +99,10 @@ void TcpTransportFactoryImpl::DoAccept(
   acceptor->async_accept(
       transport->GetUnderlyingSocket(),
       [self, acceptor, callback, transport](const ec_type& ec) {
-        if (callback(ec, transport)) {
+        if (ec) {
+          transport->StartClose();
+        }
+        if (callback(ec, ec ? nullptr : transport)) {
           // recursively accept more connections
           self->DoAccept(acceptor, callback);
         }
@@ -110,7 +113,12 @@ std::shared_ptr<TransportBase> TcpTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   auto transport = NewTransport();
   boost::asio::connect(transport->GetUnderlyingSocket(), iter, error_code);
-  return transport;
+  if (error_code) {
+    transport->StartClose();
+    return nullptr;
+  } else {
+    return transport;
+  }
 }
 
 }  // namespace impl

@@ -58,9 +58,6 @@ bool SocksTcpServer::HandleNewConnection(
   if (ec) {
     LOG.Error("failed to accept a new connection, reason: %s",
               ec.message().c_str());
-    if (transport) {
-      transport->StartClose();
-    }
     // if it is an ssl error, than the network is ok, and we may proceed
     return ec.category() == boost::asio::error::get_ssl_category();
   }

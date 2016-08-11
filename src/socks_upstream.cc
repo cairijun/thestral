@@ -59,7 +59,6 @@ void SocksTcpUpstreamFactory::StartRequest(
       if (ec) {
         LOG.Error("failed to connect to upstream, reason: %s",
                   ec.message().c_str());
-        transport->StartClose();
         callback(ec, nullptr);
         return;
       }
@@ -82,7 +81,6 @@ void SocksTcpUpstreamFactory::StartRequest(
           if (ec) {
             self->LOG.Error("failed to connect to upstream, reason: %s",
                             ec.message().c_str());
-            transport->StartClose();
             callback(ec, nullptr);  // don't care about the closing result
           } else {
             self->SendAuthRequest(endpoint, transport, callback);
@@ -153,15 +151,17 @@ void SocksTcpUpstreamFactory::SendSocksRequest(
         transport, [self, endpoint, transport, callback](
                        const ec_type& ec, ResponsePacket packet) {
           if (ec || packet.header.response_code != ResponseCode::kSuccess) {
+            transport->StartClose();
             if (ec) {
               LOG.Error("failed to receive SOCKS response packet, reason: %s",
                         ec.message().c_str());
+              callback(ec, nullptr);
             } else {
               LOG.Error("upstream response: %s",
                         to_string(packet.header.response_code).c_str());
+              callback(error::make_error_code(packet.header.response_code),
+                       nullptr);
             }
-            transport->StartClose();
-            callback(ec, nullptr);
           } else {
             // the bound address of the resulting transport should be the
             // one reported by the server rather than the one of the

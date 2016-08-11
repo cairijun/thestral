@@ -80,8 +80,11 @@ void SslTransportFactoryImpl::DoAccept(
         transport->ssl_sock_.async_handshake(
             boost::asio::ssl::stream_base::server,
             [self, acceptor, callback, transport](const ec_type& ec) {
+              if (ec) {
+                transport->StartClose();
+              }
               // the callback should distinguish ssl_error from others
-              if (callback(ec, transport)) {
+              if (callback(ec, ec ? nullptr : transport)) {
                 self->DoAccept(acceptor, callback);
               }
             });
@@ -101,7 +104,14 @@ void SslTransportFactoryImpl::StartConnect(
         transport->ssl_sock_.lowest_layer().set_option(ip::tcp::no_delay(true));
         transport->ssl_sock_.async_handshake(
             boost::asio::ssl::stream_base::client,
-            std::bind(callback, std::placeholders::_1, transport));
+            [callback, transport] (const ec_type& ec) {
+              if (ec) {
+                transport->StartClose();
+                callback(ec, nullptr);
+              } else {
+                callback(ec, transport);
+              }
+            });
       });
 }
 
@@ -116,6 +126,12 @@ std::shared_ptr<TransportBase> SslTransportFactoryImpl::TryConnect(
     transport->ssl_sock_.handshake(boost::asio::ssl::stream_base::client,
                                    error_code);
   }
+
+  if (error_code) {
+    transport->StartClose();
+    return nullptr;
+  }
+
   return transport;
 }
 

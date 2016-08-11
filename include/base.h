@@ -57,6 +57,11 @@ class TransportBase {
   virtual void StartWrite(const boost::asio::const_buffers_1& buf,
                           const WriteCallbackType& callback) = 0;
   /// Starts an asynchronous closing opeation.
+  /// The transport should be closed by the one who "owns" it currently, i.e.
+  /// * the object who created it, if the transport is in the middle of
+  ///   establishment and not yet ready
+  /// * the object who is using it, if the transport has been established
+  /// If a transport has been closed, it should not be passed to other objects.
   virtual void StartClose(const CloseCallbackType& callback) = 0;
 
   /// Convenience function for constructing and reading into a buffer.

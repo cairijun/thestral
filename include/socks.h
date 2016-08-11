@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <boost/asio.hpp>
+#include <boost/system/error_code.hpp>
 
 #include "base.h"
 #include "common.h"
@@ -127,6 +128,37 @@ struct SocksAddress : Address, PacketBase {
 typedef PacketWithHeader<RequestHeader, SocksAddress> RequestPacket;
 typedef PacketWithHeader<ResponseHeader, SocksAddress> ResponsePacket;
 
+namespace error {
+
+class SocksCategory : public boost::system::error_category {
+ public:
+  const char* name() const noexcept override { return "thestral.socks"; }
+
+  std::string message(int value) const override {
+    return "thestral.socks." + to_string(static_cast<ResponseCode>(value));
+  }
+};
+
+static inline const SocksCategory& GetSocksCategory() {
+  static SocksCategory category;
+  return category;
+}
+
+static inline boost::system::error_code make_error_code(ResponseCode code) {
+  return boost::system::error_code(static_cast<int>(code), GetSocksCategory());
+}
+
+}  // namespace error
+
 }  // namespace socks
 }  // namespace thestral
+
+namespace boost {
+namespace system {
+template <>
+struct is_error_code_enum<::thestral::socks::ResponseCode> {
+  static const bool value = true;
+};
+}  // namespace system
+}  // namespace boost
 #endif  // THESTRAL_SOCKS_H_
