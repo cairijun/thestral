@@ -17,6 +17,7 @@
 #include "mocks.h"
 
 #include <algorithm>
+#include <array>
 #include <functional>
 
 #include <boost/asio.hpp>
@@ -145,30 +146,44 @@ MockServer::MockServer()
 
 MockServer::~MockServer() {
   acceptor_.close();
+  io_service_.stop();
   t_->join();
 }
 
 void MockServer::Run() {
-  while (true) {
-    asio::ip::tcp::socket s(io_service_);
-    boost::system::error_code ec;
-    acceptor_.accept(s, ec);
-    if (ec) {
-      break;
-    }
+  AcceptOne();
+  io_service_.run();
+}
 
-    while (true) {
-      char data[8192];
-      auto len = s.read_some(asio::buffer(data), ec);
-      if (ec) {
-        break;
-      }
-      asio::write(s, asio::buffer(data, len), ec);
-      if (ec) {
-        break;
-      }
+void MockServer::AcceptOne() {
+  auto s = std::make_shared<asio::ip::tcp::socket>(io_service_);
+  acceptor_.async_accept(*s, [=](const ec_type& ec) {
+    if (!ec) {
+      this->ServeOne(s);
+      this->Run();
     }
-  }
+  });
+}
+
+void MockServer::ServeOne(const std::shared_ptr<asio::ip::tcp::socket>& s) {
+  auto buf = std::make_shared<std::array<unsigned char, 8192>>();
+  s->async_read_some(asio::buffer(*buf), [=](const ec_type& ec,
+                                             size_t n_bytes) {
+    if (ec) {
+      s->shutdown(s->shutdown_send);
+      s->close();
+    } else {
+      s->async_write_some(asio::buffer(*buf, n_bytes),
+                          [this, s, buf](const ec_type& ec, size_t n_bytes) {
+                            if (ec) {
+                              s->shutdown(s->shutdown_receive);
+                              s->close();
+                            } else {
+                              ServeOne(s);
+                            }
+                          });
+    }
+  });
 }
 
 }  // namespace testing

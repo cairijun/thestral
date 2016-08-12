@@ -125,6 +125,8 @@ class MockServer {
   constexpr static uint16_t kPort = 29172;
 
   void Run();
+  void AcceptOne();
+  void ServeOne(const std::shared_ptr<boost::asio::ip::tcp::socket>& s);
 
   boost::asio::io_service io_service_;
   boost::asio::ip::tcp::acceptor acceptor_;
