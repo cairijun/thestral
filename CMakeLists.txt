@@ -16,13 +16,23 @@ if(BUILD_TESTING AND ENABLE_COVERAGE)
   set(CMAKE_CXX_FLAGS "--coverage -O0")
 endif()
 
+set(BOOST_COMPONENTS system)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
+    # std::regex is not supported in gcc until 4.9,
+    # though 4.8 stupidly "provides" a regex header
+    list(APPEND BOOST_COMPONENTS regex)
+    add_definitions(-DTHESTRAL_USE_BOOST_REGEX)
+  endif()
+endif()
+
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost 1.60.0 REQUIRED COMPONENTS system)
+find_package(Boost 1.60.0 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 if(APPLE)
   list(INSERT CMAKE_PREFIX_PATH 0 /usr/local/opt/openssl)
 endif()
-find_package(OpenSSL 1.0.2 REQUIRED)
+find_package(OpenSSL 1.0.1 REQUIRED)
 
 set(${CMAKE_PROJECT_NAME}_INCLUDE_DIR include)
 include_directories(

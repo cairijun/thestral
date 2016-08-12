@@ -18,6 +18,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <signal.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <chrono>

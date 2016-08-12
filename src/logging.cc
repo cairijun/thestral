@@ -21,8 +21,15 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <regex>
 #include <stdexcept>
+
+#if defined(THESTRAL_USE_BOOST_REGEX)
+#include <boost/regex.hpp>
+namespace re = boost;
+#else
+#include <regex>
+namespace re = std;
+#endif
 
 namespace thestral {
 namespace logging {
@@ -89,9 +96,9 @@ class StdErrLogSink : public LogSinkBase {
 };
 
 void LogSinkBase::SetFormat(const std::string& format) {
-  std::regex re("\\{([_[:alnum:]]+?)\\}");
-  std::sregex_iterator search_iter(format.begin(), format.end(), re);
-  std::sregex_iterator search_end;
+  re::regex re("\\{([_[:alnum:]]+?)\\}");
+  re::sregex_iterator search_iter(format.begin(), format.end(), re);
+  re::sregex_iterator search_end;
 
   compiled_format_.clear();
   auto last_end = format.cbegin();
