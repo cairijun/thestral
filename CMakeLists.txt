@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.4)
-project(thestral C CXX)
+project(thestral CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 
 option(ENABLE_COVERAGE "build with --coverage option" OFF)
 if(ENABLE_COVERAGE AND NOT UNIX)
-  message(FATAL_ERROR "ENABLE_COVERAGE is available on UNIX")
+  message(FATAL_ERROR "ENABLE_COVERAGE is available only on UNIX")
 endif()
 
 include(CTest)
@@ -58,6 +58,8 @@ target_link_libraries(thestral-lib
 
 add_executable(thestral src/main.cc)
 target_link_libraries(thestral thestral-lib)
+
+install(TARGETS thestral RUNTIME DESTINATION bin)
 
 if(BUILD_TESTING)
   add_subdirectory(tests)

@@ -1,10 +1,10 @@
-set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost 1.60.0 REQUIRED COMPONENTS unit_test_framework)
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${${CMAKE_PROJECT_NAME}_INCLUDE_DIR}
     ${Boost_INCLUDE_DIR}
 )
+add_definitions(-DBOOST_TEST_DYN_LINK)
 
 file(GLOB SRCS test_*.cc)
 add_executable(unit_tests mocks.cc ${SRCS})

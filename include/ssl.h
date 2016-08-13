@@ -18,6 +18,7 @@
 #define THESTRAL_SSL_H_
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include <boost/asio.hpp>
