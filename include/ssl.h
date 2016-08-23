@@ -25,6 +25,7 @@
 #include <boost/asio/ssl.hpp>
 
 #include "base.h"
+#include "logging.h"
 #include "tcp_transport.h"
 
 namespace thestral {
@@ -100,6 +101,7 @@ class SslTransportFactoryImpl
 
   const std::shared_ptr<boost::asio::io_service> io_service_ptr_;
   boost::asio::ssl::context ssl_ctx_;
+  static logging::Logger LOG;
 };
 }  // namespace impl
 

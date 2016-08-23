@@ -23,6 +23,7 @@
 
 #include "base.h"
 #include "common.h"
+#include "logging.h"
 
 namespace thestral {
 
@@ -104,8 +105,6 @@ class TcpTransportFactoryImpl
   }
 
  private:
-  const std::shared_ptr<boost::asio::io_service> io_service_ptr_;
-
   explicit TcpTransportFactoryImpl(
       const std::shared_ptr<boost::asio::io_service>& io_service_ptr)
       : io_service_ptr_(io_service_ptr) {}
@@ -117,6 +116,9 @@ class TcpTransportFactoryImpl
 
   void DoAccept(const std::shared_ptr<boost::asio::ip::tcp::acceptor>& acceptor,
                 const AcceptCallbackType& callback);
+
+  const std::shared_ptr<boost::asio::io_service> io_service_ptr_;
+  static logging::Logger LOG;
 };
 
 }  // namespace impl

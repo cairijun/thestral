@@ -16,8 +16,6 @@
 /// Implements classes for ssl.
 #include "ssl.h"
 
-#include <functional>
-
 namespace thestral {
 namespace ssl {
 
@@ -52,8 +50,11 @@ void SslTransportImpl::StartClose(const CloseCallbackType& callback) {
       [self, callback](const ec_type& ec) { callback(ec); });
 }
 
+logging::Logger SslTransportFactoryImpl::LOG("SslTransportFactoryImpl");
+
 void SslTransportFactoryImpl::StartAccept(EndpointType endpoint,
                                           const AcceptCallbackType& callback) {
+  LOG.Debug("start accepting");
   auto acceptor =
       std::make_shared<ip::tcp::acceptor>(*io_service_ptr_, endpoint);
   acceptor->set_option(ip::tcp::no_delay(true));
@@ -68,24 +69,43 @@ void SslTransportFactoryImpl::DoAccept(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
 
   auto self = shared_from_this();
+  LOG.Debug("waiting for one connection");
   acceptor->async_accept(
       transport->ssl_sock_.lowest_layer(),
       [self, acceptor, callback, transport](const ec_type& ec) {
         if (ec) {
+          self->LOG.Debug(
+              "acceptor returning an error: %s, stop accepting",
+              ec.message().c_str());
           // accept() call failed. impossible to proceed.
           transport->StartClose();
           callback(ec, nullptr);
+        } else {
+          self->LOG.Debug(
+              "one connection accepted, start performing ssl handshake");
         }
 
         transport->ssl_sock_.async_handshake(
             boost::asio::ssl::stream_base::server,
             [self, acceptor, callback, transport](const ec_type& ec) {
               if (ec) {
+                self->LOG.Debug(
+                    "ssl transport returning an error on handshake: %s,"
+                    " remote endpoint: %s",
+                    ec.message().c_str(),
+                    transport->GetRemoteAddress().ToString().c_str());
                 transport->StartClose();
+              } else {
+                self->LOG.Debug(
+                    "ssl handshake succeeded, remote endpoint: %s",
+                    transport->GetRemoteAddress().ToString().c_str());
               }
               // the callback should distinguish ssl_error from others
               if (callback(ec, ec ? nullptr : transport)) {
                 self->DoAccept(acceptor, callback);
+              } else {
+                self->LOG.Debug(
+                    "upper layer gave up accepting more connections");
               }
             });
       });
@@ -95,20 +115,31 @@ void SslTransportFactoryImpl::StartConnect(
     EndpointType endpoint, const ConnectCallbackType& callback) {
   std::shared_ptr<SslTransportImpl> transport(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
+  auto self = shared_from_this();
+  LOG.Debug("start connecting");
   transport->ssl_sock_.lowest_layer().async_connect(
-      endpoint, [transport, callback](const ec_type& ec) {
+      endpoint, [self, transport, callback](const ec_type& ec) {
         if (ec) {
+          self->LOG.Debug("ssl transport returning an error: %s",
+                          ec.message().c_str());
           transport->StartClose();
           callback(ec, nullptr);
+        } else {
+          self->LOG.Debug(
+              "connection established, start performing ssl handshake");
         }
         transport->ssl_sock_.lowest_layer().set_option(ip::tcp::no_delay(true));
         transport->ssl_sock_.async_handshake(
             boost::asio::ssl::stream_base::client,
-            [callback, transport] (const ec_type& ec) {
+            [self, callback, transport](const ec_type& ec) {
               if (ec) {
+                self->LOG.Debug(
+                    "ssl transport returning an error on handshake: %s",
+                    ec.message().c_str());
                 transport->StartClose();
                 callback(ec, nullptr);
               } else {
+                self->LOG.Debug("ssl handshake succeeded");
                 callback(ec, transport);
               }
             });
@@ -119,19 +150,24 @@ std::shared_ptr<TransportBase> SslTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   std::shared_ptr<SslTransportImpl> transport(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
+  LOG.Debug("start connecting");
   iter = boost::asio::connect(transport->ssl_sock_.lowest_layer(), iter,
                               error_code);
   if (!error_code) {
+    LOG.Debug("connection established, start performing ssl handshake");
     transport->ssl_sock_.lowest_layer().set_option(ip::tcp::no_delay(true));
     transport->ssl_sock_.handshake(boost::asio::ssl::stream_base::client,
                                    error_code);
   }
 
   if (error_code) {
+    LOG.Debug("ssl transport returning an error: %s",
+              error_code.message().c_str());
     transport->StartClose();
     return nullptr;
   }
 
+  LOG.Debug("ssl handshake succeeded");
   return transport;
 }
 

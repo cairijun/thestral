@@ -58,12 +58,11 @@ bool SocksTcpServer::HandleNewConnection(
   if (ec) {
     LOG.Error("failed to accept a new connection, reason: %s",
               ec.message().c_str());
-    // if it is an ssl error, than the network is ok, and we may proceed
-    return ec.category() == boost::asio::error::get_ssl_category();
+    return true;  // the underlying transport factory should decide when to stop
   }
 
   auto self = shared_from_this();
-  LOG.Info("new incomming connection %s",
+  LOG.Info("new incoming connection %s",
            transport->GetRemoteAddress().ToString().c_str());
   LOG.Debug("receiving auth request packet");
   AuthMethodList::StartCreateFrom(

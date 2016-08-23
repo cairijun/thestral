@@ -16,8 +16,6 @@
 /// Implements a transport on plain TCP protocol.
 #include "tcp_transport.h"
 
-#include <functional>
-
 namespace thestral {
 
 std::shared_ptr<TcpTransportFactory> TcpTransportFactory::New(
@@ -67,8 +65,11 @@ void TcpTransportImpl::StartClose(const CloseCallbackType& callback) {
   callback(ec);
 }
 
+logging::Logger TcpTransportFactoryImpl::LOG("TcpTransportFactoryImpl");
+
 void TcpTransportFactoryImpl::StartAccept(EndpointType endpoint,
                                           const AcceptCallbackType& callback) {
+  LOG.Debug("start accepting");
   auto acceptor =
       std::make_shared<ip::tcp::acceptor>(*io_service_ptr_, endpoint);
   acceptor->set_option(ip::tcp::no_delay(true));
@@ -79,12 +80,17 @@ void TcpTransportFactoryImpl::StartAccept(EndpointType endpoint,
 void TcpTransportFactoryImpl::StartConnect(
     EndpointType endpoint, const ConnectCallbackType& callback) {
   auto transport = NewTransport();
+  auto self = shared_from_this();
+  LOG.Debug("start connecting");
   transport->GetUnderlyingSocket().async_connect(
-      endpoint, [transport, callback](const ec_type& ec) {
+      endpoint, [transport, self, callback](const ec_type& ec) {
         if (ec) {
+          self->LOG.Debug("transport returning an error: %s",
+                          ec.message().c_str());
           transport->StartClose();
           callback(ec, nullptr);
         } else {
+          self->LOG.Debug("connection established");
           transport->GetUnderlyingSocket().set_option(ip::tcp::no_delay(true));
           callback(ec, transport);
         }
@@ -96,15 +102,28 @@ void TcpTransportFactoryImpl::DoAccept(
     const AcceptCallbackType& callback) {
   auto transport = NewTransport();
   auto self = shared_from_this();
+  LOG.Debug("waiting for one connection");
   acceptor->async_accept(
       transport->GetUnderlyingSocket(),
       [self, acceptor, callback, transport](const ec_type& ec) {
+        bool should_stop = false;
         if (ec) {
+          self->LOG.Debug("acceptor returning an error: %s, stop accepting",
+                          ec.message().c_str());
+          should_stop = true;
           transport->StartClose();
+        } else {
+          self->LOG.Debug("one connection accepted");
         }
-        if (callback(ec, ec ? nullptr : transport)) {
+        // even if `should_stop` is true, we still need to report the error
+        // to the upper layer(s)
+        if (callback(ec, ec ? nullptr : transport) && !should_stop) {
           // recursively accept more connections
           self->DoAccept(acceptor, callback);
+        } else if (should_stop) {
+          self->LOG.Debug("give up accepting more connections");
+        } else {
+          self->LOG.Debug("upper layer gave up accepting more connections");
         }
       });
 }
@@ -112,11 +131,14 @@ void TcpTransportFactoryImpl::DoAccept(
 std::shared_ptr<TransportBase> TcpTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   auto transport = NewTransport();
+  LOG.Debug("start connecting");
   boost::asio::connect(transport->GetUnderlyingSocket(), iter, error_code);
   if (error_code) {
+    LOG.Debug("transport returning an error: %s", error_code.message().c_str());
     transport->StartClose();
     return nullptr;
   } else {
+    LOG.Debug("connection established");
     return transport;
   }
 }
