@@ -45,12 +45,14 @@ std::shared_ptr<TcpTransportFactory> MakeServerTransportFactory(
 }
 
 std::shared_ptr<TcpTransportFactory> MakeClientTransportFactory(
-    const std::shared_ptr<boost::asio::io_service>& io_service) {
+    const std::shared_ptr<boost::asio::io_service>& io_service,
+    const std::string& server_addr = "127.0.0.1") {
   return SslTransportFactoryBuilder()
       .LoadCaFile("ca.pem")
       .LoadCertChain("test.pem")
       .LoadPrivateKey("test.key.pem")
       .SetVerifyPeer(true)
+      .SetVerifyHost(server_addr)
       .Build(io_service);
 }
 
@@ -118,6 +120,8 @@ BOOST_AUTO_TEST_CASE(test_ssl_transport) {
   });
 
   io_service->run();
+  BOOST_TEST(accept_done);
+  BOOST_TEST(connect_done);
 }
 
 BOOST_FIXTURE_TEST_CASE(test_accept_error, testing::TestTcpTransportFactory) {
@@ -153,12 +157,37 @@ BOOST_AUTO_TEST_CASE(test_handshake_error) {
     return false;
   });
 
-  client_transport_factory->StartConnect(endpoint, TRANSPORT_CALLBACK(&) {
-    transport->StartClose();
-  });
+  client_transport_factory->StartConnect(
+      endpoint, TRANSPORT_CALLBACK(&) { transport->StartClose(); });
 
   io_service->run();
   BOOST_TEST(called);
+}
+
+BOOST_AUTO_TEST_CASE(test_verify_host) {
+  auto io_service = std::make_shared<boost::asio::io_service>();
+  auto server_transport_factory = MakeServerTransportFactory(io_service);
+  auto client_transport_factory =
+      MakeClientTransportFactory(io_service, "mismatch.host");
+  boost::asio::ip::tcp::endpoint endpoint(
+      boost::asio::ip::address::from_string("127.0.0.1"), 51895);
+
+  bool server_called = false;
+  server_transport_factory->StartAccept(endpoint, TRANSPORT_CALLBACK(&) {
+    BOOST_TEST((boost::asio::error::get_ssl_category() == ec.category()));
+    server_called = true;
+    return false;
+  });
+
+  bool client_called = false;
+  client_transport_factory->StartConnect(endpoint, TRANSPORT_CALLBACK(&) {
+    BOOST_TEST((boost::asio::error::get_ssl_category() == ec.category()));
+    client_called = true;
+  });
+
+  io_service->run();
+  BOOST_TEST(server_called);
+  BOOST_TEST(client_called);
 }
 
 BOOST_AUTO_TEST_SUITE_END();

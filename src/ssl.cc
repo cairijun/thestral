@@ -253,5 +253,11 @@ SslTransportFactoryBuilder& SslTransportFactoryBuilder::SetVerifyPeer(
   return *this;
 }
 
+SslTransportFactoryBuilder& SslTransportFactoryBuilder::SetVerifyHost(
+    const std::string& host) {
+  ssl_ctx_.set_verify_callback(boost::asio::ssl::rfc2818_verification(host));
+  return *this;
+}
+
 }  // namespace ssl
 }  // namespace thestral

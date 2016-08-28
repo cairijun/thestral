@@ -125,6 +125,7 @@ class SslTransportFactoryBuilder {
   /// `SSL_VERIFY_FAIL_IF_NO_PEER_CERT` and `SSL_VERIFY_CLIENT_ONCE` are set as
   /// well.
   SslTransportFactoryBuilder& SetVerifyPeer(bool verify);
+  SslTransportFactoryBuilder& SetVerifyHost(const std::string& host);
 
  private:
   boost::asio::ssl::context ssl_ctx_;

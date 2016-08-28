@@ -68,7 +68,7 @@ logging::Level ParseLevelOrDie(const std::string& level_str) {
 }
 
 std::shared_ptr<TcpTransportFactory> MakeTcpTransportFactoryOrDie(
-    pt::ptree config,
+    pt::ptree config, bool is_server,
     const std::shared_ptr<boost::asio::io_service>& io_service_ptr) {
   auto ssl_iter = config.find("ssl");
   if (ssl_iter == config.not_found()) {
@@ -95,6 +95,7 @@ std::shared_ptr<TcpTransportFactory> MakeTcpTransportFactoryOrDie(
     if (auto val = ssl_config.get_optional<int>("verify_depth")) {
       builder.SetVerifyDepth(*val);
     }
+
     if (auto val = ssl_config.get_optional<std::string>("verify_peer")) {
       if (*val == "true") {
         builder.SetVerifyPeer(true);
@@ -103,7 +104,13 @@ std::shared_ptr<TcpTransportFactory> MakeTcpTransportFactoryOrDie(
       } else {
         DieOf("unknown value of option \"verify_peer\": ", *val);
       }
+
+      if (!is_server) {  // verify server name
+        std::string server_addr = config.get<std::string>("address");
+        builder.SetVerifyHost(server_addr);
+      }
     }
+
     return builder.Build(io_service_ptr);
   }
 }
@@ -111,7 +118,7 @@ std::shared_ptr<TcpTransportFactory> MakeTcpTransportFactoryOrDie(
 std::shared_ptr<UpstreamFactoryBase> MakeUpstreamFactoryOrDie(
     pt::ptree config,
     const std::shared_ptr<boost::asio::io_service>& io_service_ptr) {
-  auto transport_factory = MakeTcpTransportFactoryOrDie(config, io_service_ptr);
+  auto transport_factory = MakeTcpTransportFactoryOrDie(config, false, io_service_ptr);
   if (config.data() == "direct") {
     return DirectTcpUpstreamFactory::New(transport_factory);
 
@@ -151,7 +158,7 @@ void MainApp::Run() const {
     auto address = i->second.get<std::string>("address");
     auto port = i->second.get<uint16_t>("port");
     auto transport_factory =
-        MakeTcpTransportFactoryOrDie(i->second, io_service_ptr);
+        MakeTcpTransportFactoryOrDie(i->second, true, io_service_ptr);
     auto upstream_config = i->second.get_child("upstream");
     auto upstream = MakeUpstreamFactoryOrDie(upstream_config, io_service_ptr);
 
