@@ -62,14 +62,14 @@ bool SocksTcpServer::HandleNewConnection(
   }
 
   auto self = shared_from_this();
-  LOG.Info("new incoming connection %s",
+  LOG.Info("[%llX] new incoming connection %s", transport->GetId(),
            transport->GetRemoteAddress().ToString().c_str());
-  LOG.Debug("receiving auth request packet");
+  LOG.Debug("[%llX] receiving auth request packet", transport->GetId());
   AuthMethodList::StartCreateFrom(
       transport, [self, transport](const ec_type& ec, AuthMethodList packet) {
         if (ec) {
-          LOG.Error("failed to receive auth request packet, reason: %s",
-                    ec.message().c_str());
+          LOG.Error("[%llX] failed to receive auth request packet, reason: %s",
+                    transport->GetId(), ec.message().c_str());
           transport->StartClose();
           return;
         }
@@ -77,13 +77,16 @@ bool SocksTcpServer::HandleNewConnection(
         if (std::find(packet.methods.cbegin(), packet.methods.cend(),
                       AuthMethod::kNoAuth) == packet.methods.cend()) {
           // no supported auth method provided
-          LOG.Error("no supported auth method provided by the downstream");
+          LOG.Error(
+              "[%llX] no supported auth method provided by the downstream",
+              transport->GetId());
           response.method = AuthMethod::kNotSupported;
           response.StartWriteTo(transport, [transport](const ec_type&, size_t) {
             transport->StartClose();
           });
         } else {
-          LOG.Debug("sending auth acknowledgment packet");
+          LOG.Debug("[%llX] sending auth acknowledgment packet",
+                    transport->GetId());
           response.method = AuthMethod::kNoAuth;
           response.StartWriteTo(
               transport, std::bind(&SocksTcpServer::ReceiveRequestPacket, self,
@@ -97,22 +100,23 @@ bool SocksTcpServer::HandleNewConnection(
 void SocksTcpServer::ReceiveRequestPacket(
     const ec_type& ec, const std::shared_ptr<TransportBase>& transport) {
   if (ec) {
-    LOG.Error("failed to send auth acknowledgment packet, reason: %s",
-              ec.message().c_str());
+    LOG.Error("[%llX] failed to send auth acknowledgment packet, reason: %s",
+              transport->GetId(), ec.message().c_str());
     transport->StartClose();
     return;
   }
 
   auto self = shared_from_this();
-  LOG.Debug("receiving SOCKS request packet");
+  LOG.Debug("[%llX] receiving SOCKS request packet", transport->GetId());
   RequestPacket::StartCreateFrom(
       transport, [self, transport](const ec_type& ec, RequestPacket packet) {
         if (ec) {
-          LOG.Error("failed to receive SOCKS request packet, reason: %s",
-                    ec.message().c_str());
+          LOG.Error("[%llX] failed to receive SOCKS request packet, reason: %s",
+                    transport->GetId(), ec.message().c_str());
           transport->StartClose();
         } else if (packet.header.command != Command::kConnect) {
-          LOG.Error("downstream requested an unsupported command %s",
+          LOG.Error("[%llX] downstream requested an unsupported command %s",
+                    transport->GetId(),
                     to_string(packet.header.command).c_str());
           self->ResponseError(ResponseCode::kCommandNotSupported, transport);
         } else {
@@ -126,9 +130,10 @@ void SocksTcpServer::HandleRequest(
     RequestPacket request, const std::shared_ptr<TransportBase>& downstream) {
   Address downstream_address = downstream->GetRemoteAddress();
   LOG.Info(
-      "establishing connection to %s, "
+      "[%llX] establishing connection to %s, "
       "on behalf of downstream %s",
-      request.body.ToString().c_str(), downstream_address.ToString().c_str());
+      downstream->GetId(), request.body.ToString().c_str(),
+      downstream_address.ToString().c_str());
 
   auto self = shared_from_this();
   upstream_factory_->StartRequest(
@@ -137,34 +142,37 @@ void SocksTcpServer::HandleRequest(
           const ec_type& ec, const std::shared_ptr<TransportBase>& upstream) {
         if (ec) {
           // TODO(richardtsai): handle more kinds of errors
-          LOG.Error("failed to establish connection, reason: %s",
-                    ec.message().c_str());
+          LOG.Error("[%llX] failed to establish connection, reason: %s",
+                    downstream->GetId(), ec.message().c_str());
           self->ResponseError(ResponseCode::kConnectionRefused, downstream);
         } else {
           ResponsePacket response;
           response.header.response_code = ResponseCode::kSuccess;
           response.body = upstream->GetLocalAddress();
-          LOG.Debug("sending SOCKS response to downstream");
-          response.StartWriteTo(
-              downstream,
-              [self, request, downstream, upstream](const ec_type& ec, size_t) {
-                if (ec) {
-                  LOG.Error("failed to send SOCKS response, reason: %s",
-                            ec.message().c_str());
-                  downstream->StartClose();
-                  upstream->StartClose();
-                } else {
-                  // start relay in both direction
-                  Address downstream_address = downstream->GetRemoteAddress();
-                  LOG.Info(
-                      "connection established to %s, "
-                      "on behalf of downstream %s, start relaying",
-                      request.body.ToString().c_str(),
-                      downstream_address.ToString().c_str());
-                  self->StartRelay(downstream, upstream);
-                  self->StartRelay(upstream, downstream);
-                }
-              });
+          LOG.Debug("[%llX => %llX] sending SOCKS response to downstream",
+                    downstream->GetId(), upstream->GetId());
+          response.StartWriteTo(downstream, [self, request, downstream,
+                                             upstream](const ec_type& ec,
+                                                       size_t) {
+            if (ec) {
+              LOG.Error(
+                  "[%llX => %llX] failed to send SOCKS response, reason: %s",
+                  downstream->GetId(), upstream->GetId(), ec.message().c_str());
+              downstream->StartClose();
+              upstream->StartClose();
+            } else {
+              // start relay in both direction
+              Address downstream_address = downstream->GetRemoteAddress();
+              LOG.Info(
+                  "[%llX => %llX] connection established to %s, "
+                  "on behalf of downstream %s, start relaying",
+                  downstream->GetId(), upstream->GetId(),
+                  request.body.ToString().c_str(),
+                  downstream_address.ToString().c_str());
+              self->StartRelay(downstream, upstream);
+              self->StartRelay(upstream, downstream);
+            }
+          });
         }
       });
 }

@@ -95,29 +95,30 @@ void SocksTcpUpstreamFactory::SendAuthRequest(
   AuthMethodList packet;
   packet.methods.push_back(AuthMethod::kNoAuth);
   auto self = shared_from_this();
-  LOG.Debug("sending SOCKS auth request packet");
+  LOG.Debug("[%llX] sending SOCKS auth request packet", transport->GetId());
   packet.StartWriteTo(transport, [self, endpoint, transport, callback](
                                      const ec_type& ec, size_t) {
     if (ec) {
-      LOG.Error("failed to send SOCKS auth request packet, reason: %s",
-                ec.message().c_str());
+      LOG.Error("[%llX] failed to send SOCKS auth request packet, reason: %s",
+                transport->GetId(), ec.message().c_str());
       transport->StartClose();
       callback(ec, nullptr);
       return;
     }
-    LOG.Debug("receiving SOCKS auth acknowledgment packet");
+    LOG.Debug("[%llX] receiving SOCKS auth acknowledgment packet",
+              transport->GetId());
     AuthMethodSelectPacket::StartCreateFrom(
         transport, [self, endpoint, transport, callback](
                        const ec_type& ec, AuthMethodSelectPacket packet) {
           if (ec || packet.method != AuthMethod::kNoAuth) {
             if (ec) {
               LOG.Error(
-                  "failed to receive SOCKS auth acknowledgment packet,"
+                  "[%llX] failed to receive SOCKS auth acknowledgment packet,"
                   " reason: %s",
-                  ec.message().c_str());
+                  transport->GetId(), ec.message().c_str());
             } else {
-              LOG.Error("upstream chose an unsupported auth method %s",
-                        to_string(packet.method).c_str());
+              LOG.Error("[%llX] upstream chose an unsupported auth method %s",
+                        transport->GetId(), to_string(packet.method).c_str());
             }
             transport->StartClose();
             callback(ec, nullptr);
@@ -136,28 +137,29 @@ void SocksTcpUpstreamFactory::SendSocksRequest(
   packet.body = endpoint;
 
   auto self = shared_from_this();
-  LOG.Debug("sending to SOCKS request packet");
+  LOG.Debug("[%llX] sending to SOCKS request packet", transport->GetId());
   packet.StartWriteTo(transport, [self, endpoint, transport, callback](
                                      const ec_type& ec, size_t) {
     if (ec) {
-      LOG.Error("failed to send SOCKS request packet, reason: %s",
-                ec.message().c_str());
+      LOG.Error("[%llX] failed to send SOCKS request packet, reason: %s",
+                transport->GetId(), ec.message().c_str());
       transport->StartClose();
       callback(ec, nullptr);
       return;
     }
-    LOG.Debug("receiving SOCKS response packet");
+    LOG.Debug("[%llX] receiving SOCKS response packet", transport->GetId());
     ResponsePacket::StartCreateFrom(
         transport, [self, endpoint, transport, callback](
                        const ec_type& ec, ResponsePacket packet) {
           if (ec || packet.header.response_code != ResponseCode::kSuccess) {
             transport->StartClose();
             if (ec) {
-              LOG.Error("failed to receive SOCKS response packet, reason: %s",
-                        ec.message().c_str());
+              LOG.Error(
+                  "[%llX] failed to receive SOCKS response packet, reason: %s",
+                  transport->GetId(), ec.message().c_str());
               callback(ec, nullptr);
             } else {
-              LOG.Error("upstream response: %s",
+              LOG.Error("[%llX] upstream response: %s", transport->GetId(),
                         to_string(packet.header.response_code).c_str());
               callback(error::make_error_code(packet.header.response_code),
                        nullptr);
@@ -169,7 +171,7 @@ void SocksTcpUpstreamFactory::SendSocksRequest(
             auto wrapped_transport =
                 std::make_shared<impl::SocksTransportWrapper>(transport,
                                                               packet.body);
-            LOG.Info("connection to %s established",
+            LOG.Info("[%llX] connection to %s established", transport->GetId(),
                      endpoint.ToString().c_str());
             callback(ec, wrapped_transport);  // finally, success!
           }

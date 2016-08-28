@@ -61,6 +61,8 @@ class SocksTransportWrapper : public TransportBase {
     wrapped_->StartClose(callback);
   }
 
+  IdType GetId() const override { return wrapped_->GetId(); }
+
   /// Constructs a wrapper around a pointer to a transport.
   /// @param wrapped The wrapped transport pointer.
   /// @param bound_address The address to return for GetLocalAddress().

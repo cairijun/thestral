@@ -82,16 +82,16 @@ void TcpTransportFactoryImpl::StartConnect(
     EndpointType endpoint, const ConnectCallbackType& callback) {
   auto transport = NewTransport();
   auto self = shared_from_this();
-  LOG.Debug("start connecting");
+  LOG.Debug("[%llX] start connecting", transport->GetId());
   transport->GetUnderlyingSocket().async_connect(
       endpoint, [transport, self, callback](const ec_type& ec) {
         if (ec) {
-          self->LOG.Debug("transport returning an error: %s",
-                          ec.message().c_str());
+          self->LOG.Debug("[%llX] transport returning an error: %s",
+                          transport->GetId(), ec.message().c_str());
           transport->StartClose();
           callback(ec, nullptr);
         } else {
-          self->LOG.Debug("connection established");
+          self->LOG.Debug("[%llX] connection established", transport->GetId());
           transport->GetUnderlyingSocket().set_option(ip::tcp::no_delay(true));
           callback(ec, transport);
         }
@@ -103,18 +103,19 @@ void TcpTransportFactoryImpl::DoAccept(
     const AcceptCallbackType& callback) {
   auto transport = NewTransport();
   auto self = shared_from_this();
-  LOG.Debug("waiting for one connection");
+  LOG.Debug("[%llX] waiting for one connection", transport->GetId());
   acceptor->async_accept(
       transport->GetUnderlyingSocket(),
       [self, acceptor, callback, transport](const ec_type& ec) {
         bool should_stop = false;
         if (ec) {
-          self->LOG.Debug("acceptor returning an error: %s, stop accepting",
-                          ec.message().c_str());
+          self->LOG.Debug(
+              "[%llX] acceptor returning an error: %s, stop accepting",
+              transport->GetId(), ec.message().c_str());
           should_stop = true;
           transport->StartClose();
         } else {
-          self->LOG.Debug("one connection accepted");
+          self->LOG.Debug("[%llX] one connection accepted", transport->GetId());
         }
         // even if `should_stop` is true, we still need to report the error
         // to the upper layer(s)
@@ -122,9 +123,12 @@ void TcpTransportFactoryImpl::DoAccept(
           // recursively accept more connections
           self->DoAccept(acceptor, callback);
         } else if (should_stop) {
-          self->LOG.Debug("give up accepting more connections");
+          self->LOG.Debug("[%llX] give up accepting more connections",
+                          transport->GetId());
         } else {
-          self->LOG.Debug("upper layer gave up accepting more connections");
+          self->LOG.Debug(
+              "[%llX] upper layer gave up accepting more connections",
+              transport->GetId());
         }
       });
 }
@@ -132,14 +136,15 @@ void TcpTransportFactoryImpl::DoAccept(
 std::shared_ptr<TransportBase> TcpTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   auto transport = NewTransport();
-  LOG.Debug("start connecting");
+  LOG.Debug("[%llX] start connecting", transport->GetId());
   boost::asio::connect(transport->GetUnderlyingSocket(), iter, error_code);
   if (error_code) {
-    LOG.Debug("transport returning an error: %s", error_code.message().c_str());
+    LOG.Debug("[%llX] transport returning an error: %s", transport->GetId(),
+              error_code.message().c_str());
     transport->StartClose();
     return nullptr;
   } else {
-    LOG.Debug("connection established");
+    LOG.Debug("[%llX] connection established", transport->GetId());
     return transport;
   }
 }

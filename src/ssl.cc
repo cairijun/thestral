@@ -70,21 +70,22 @@ void SslTransportFactoryImpl::DoAccept(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
 
   auto self = shared_from_this();
-  LOG.Debug("waiting for one connection");
+  LOG.Debug("[%llX] waiting for one connection", transport->GetId());
   acceptor->async_accept(
       transport->ssl_sock_.lowest_layer(),
       [self, acceptor, callback, transport](const ec_type& ec) {
         if (ec) {
           self->LOG.Debug(
-              "acceptor returning an error: %s, stop accepting",
-              ec.message().c_str());
+              "[%llX] acceptor returning an error: %s, stop accepting",
+              transport->GetId(), ec.message().c_str());
           // accept() call failed. impossible to proceed.
           transport->StartClose();
           callback(ec, nullptr);
           return;
         } else {
           self->LOG.Debug(
-              "one connection accepted, start performing ssl handshake");
+              "[%llX] one connection accepted, start performing ssl handshake",
+              transport->GetId());
         }
 
         transport->ssl_sock_.async_handshake(
@@ -92,21 +93,23 @@ void SslTransportFactoryImpl::DoAccept(
             [self, acceptor, callback, transport](const ec_type& ec) {
               if (ec) {
                 self->LOG.Debug(
-                    "ssl transport returning an error on handshake: %s,"
+                    "[%llX] ssl transport returning an error on handshake: %s,"
                     " remote endpoint: %s",
-                    ec.message().c_str(),
+                    transport->GetId(), ec.message().c_str(),
                     transport->GetRemoteAddress().ToString().c_str());
                 transport->StartClose();
               } else {
                 self->LOG.Debug(
-                    "ssl handshake succeeded, remote endpoint: %s",
+                    "[%llX] ssl handshake succeeded, remote endpoint: %s",
+                    transport->GetId(),
                     transport->GetRemoteAddress().ToString().c_str());
               }
               if (callback(ec, ec ? nullptr : transport)) {
                 self->DoAccept(acceptor, callback);
               } else {
                 self->LOG.Debug(
-                    "upper layer gave up accepting more connections");
+                    "[%llX] upper layer gave up accepting more connections",
+                    transport->GetId());
               }
             });
       });
@@ -117,17 +120,18 @@ void SslTransportFactoryImpl::StartConnect(
   std::shared_ptr<SslTransportImpl> transport(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
   auto self = shared_from_this();
-  LOG.Debug("start connecting");
+  LOG.Debug("[%llX] start connecting", transport->GetId());
   transport->ssl_sock_.lowest_layer().async_connect(
       endpoint, [self, transport, callback](const ec_type& ec) {
         if (ec) {
-          self->LOG.Debug("ssl transport returning an error: %s",
-                          ec.message().c_str());
+          self->LOG.Debug("[%llX] ssl transport returning an error: %s",
+                          transport->GetId(), ec.message().c_str());
           transport->StartClose();
           callback(ec, nullptr);
         } else {
           self->LOG.Debug(
-              "connection established, start performing ssl handshake");
+              "[%llX] connection established, start performing ssl handshake",
+              transport->GetId());
         }
         transport->ssl_sock_.lowest_layer().set_option(ip::tcp::no_delay(true));
         transport->ssl_sock_.async_handshake(
@@ -135,12 +139,13 @@ void SslTransportFactoryImpl::StartConnect(
             [self, callback, transport](const ec_type& ec) {
               if (ec) {
                 self->LOG.Debug(
-                    "ssl transport returning an error on handshake: %s",
-                    ec.message().c_str());
+                    "[%llX] ssl transport returning an error on handshake: %s",
+                    transport->GetId(), ec.message().c_str());
                 transport->StartClose();
                 callback(ec, nullptr);
               } else {
-                self->LOG.Debug("ssl handshake succeeded");
+                self->LOG.Debug("[%llX] ssl handshake succeeded",
+                                transport->GetId());
                 callback(ec, transport);
               }
             });
@@ -151,24 +156,25 @@ std::shared_ptr<TransportBase> SslTransportFactoryImpl::TryConnect(
     boost::asio::ip::tcp::resolver::iterator& iter, ec_type& error_code) {
   std::shared_ptr<SslTransportImpl> transport(
       new SslTransportImpl(*io_service_ptr_, ssl_ctx_));
-  LOG.Debug("start connecting");
+  LOG.Debug("[%llX] start connecting", transport->GetId());
   iter = boost::asio::connect(transport->ssl_sock_.lowest_layer(), iter,
                               error_code);
   if (!error_code) {
-    LOG.Debug("connection established, start performing ssl handshake");
+    LOG.Debug("[%llX] connection established, start performing ssl handshake",
+              transport->GetId());
     transport->ssl_sock_.lowest_layer().set_option(ip::tcp::no_delay(true));
     transport->ssl_sock_.handshake(boost::asio::ssl::stream_base::client,
                                    error_code);
   }
 
   if (error_code) {
-    LOG.Debug("ssl transport returning an error: %s",
+    LOG.Debug("[%llX] ssl transport returning an error: %s", transport->GetId(),
               error_code.message().c_str());
     transport->StartClose();
     return nullptr;
   }
 
-  LOG.Debug("ssl handshake succeeded");
+  LOG.Debug("[%llX] ssl handshake succeeded", transport->GetId());
   return transport;
 }
 

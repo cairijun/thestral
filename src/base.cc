@@ -16,7 +16,23 @@
 /// Implements some methods in base.h.
 #include "base.h"
 
+#include <atomic>
+#include <chrono>
+
 namespace thestral {
+
+namespace {
+std::chrono::milliseconds::rep TimeSinceEpoch() {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+}  // anonymous namespace
+
+TransportBase::IdType TransportBase::GetNextId() {
+  static std::atomic<IdType> next_id{static_cast<IdType>(TimeSinceEpoch())};
+  return next_id++;
+}
 
 void PacketBase::StartWriteTo(
     const std::shared_ptr<TransportBase>& transport,

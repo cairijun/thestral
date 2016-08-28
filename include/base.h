@@ -18,6 +18,7 @@
 #define THESTRAL_BASE_H_
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -40,8 +41,13 @@ class TransportBase {
   typedef std::function<void(const ec_type&, std::size_t)> ReadCallbackType;
   typedef std::function<void(const ec_type&, std::size_t)> WriteCallbackType;
   typedef std::function<void(const ec_type&)> CloseCallbackType;
+  typedef std::uint_fast64_t IdType;
 
+  TransportBase() : id_(GetNextId()) {}
   virtual ~TransportBase() {}
+
+  /// Returns the unique id of the transport.
+  virtual IdType GetId() const { return id_; }
 
   /// Returns the bound local address of the transport.
   virtual Address GetLocalAddress() const = 0;
@@ -111,6 +117,11 @@ class TransportBase {
   virtual void StartClose() {
     StartClose([](const ec_type&) {});
   }
+
+ private:
+  static IdType GetNextId();
+
+  const IdType id_;
 };
 
 /// Base class of transport factories. The transport factory creates Transport
