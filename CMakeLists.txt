@@ -3,6 +3,7 @@ project(thestral CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
 
 option(ENABLE_COVERAGE "build with --coverage option" OFF)
 if(ENABLE_COVERAGE AND NOT UNIX)
