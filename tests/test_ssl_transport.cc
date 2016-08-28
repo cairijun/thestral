@@ -22,6 +22,8 @@
 #include <boost/asio.hpp>
 #include <boost/test/unit_test.hpp>
 
+#include "tcp_transport.h"
+
 #define TRANSPORT_CALLBACK(...)    \
   [__VA_ARGS__](const ec_type& ec, \
                 const std::shared_ptr<TransportBase>& transport)
@@ -30,23 +32,36 @@
 namespace thestral {
 namespace ssl {
 
+namespace {
+std::shared_ptr<TcpTransportFactory> MakeServerTransportFactory(
+    const std::shared_ptr<boost::asio::io_service>& io_service) {
+  return SslTransportFactoryBuilder()
+      .LoadCaFile("ca.pem")
+      .LoadCertChain("test.server.pem")
+      .LoadPrivateKey("test.server.key.pem")
+      .LoadDhParams("dh2048.pem")
+      .SetVerifyPeer(true)
+      .Build(io_service);
+}
+
+std::shared_ptr<TcpTransportFactory> MakeClientTransportFactory(
+    const std::shared_ptr<boost::asio::io_service>& io_service) {
+  return SslTransportFactoryBuilder()
+      .LoadCaFile("ca.pem")
+      .LoadCertChain("test.pem")
+      .LoadPrivateKey("test.key.pem")
+      .SetVerifyPeer(true)
+      .Build(io_service);
+}
+
+}  // anonymous namespace
+
 BOOST_AUTO_TEST_SUITE(test_ssl_transport);
 
 BOOST_AUTO_TEST_CASE(test_ssl_transport) {
   auto io_service = std::make_shared<boost::asio::io_service>();
-  auto server_transport_factory = SslTransportFactoryBuilder()
-                                      .LoadCaFile("ca.pem")
-                                      .LoadCertChain("test.server.pem")
-                                      .LoadPrivateKey("test.server.key.pem")
-                                      .LoadDhParams("dh2048.pem")
-                                      .SetVerifyPeer(true)
-                                      .Build(io_service);
-  auto client_transport_factory = SslTransportFactoryBuilder()
-                                      .LoadCaFile("ca.pem")
-                                      .LoadCertChain("test.pem")
-                                      .LoadPrivateKey("test.key.pem")
-                                      .SetVerifyPeer(true)
-                                      .Build(io_service);
+  auto server_transport_factory = MakeServerTransportFactory(io_service);
+  auto client_transport_factory = MakeClientTransportFactory(io_service);
 
   std::string data_to_client = "data to client";
   std::string data_to_server = "data to server";
@@ -103,6 +118,47 @@ BOOST_AUTO_TEST_CASE(test_ssl_transport) {
   });
 
   io_service->run();
+}
+
+BOOST_FIXTURE_TEST_CASE(test_accept_error, testing::TestTcpTransportFactory) {
+  auto io_service = std::make_shared<boost::asio::io_service>();
+  auto factory = MakeServerTransportFactory(io_service);
+  boost::asio::ip::tcp::endpoint endpoint(
+      boost::asio::ip::address::from_string("127.0.0.1"), 51893);
+
+  bool called = false;
+  factory->StartAccept(endpoint, TRANSPORT_CALLBACK(&) {
+    BOOST_CHECK_EQUAL(boost::asio::error::operation_aborted, ec.value());
+    called = true;
+    return true;
+  });
+
+  GetLastAcceptor(factory).lock()->close();
+
+  io_service->run();
+  BOOST_TEST(called);
+}
+
+BOOST_AUTO_TEST_CASE(test_handshake_error) {
+  auto io_service = std::make_shared<boost::asio::io_service>();
+  auto server_transport_factory = MakeServerTransportFactory(io_service);
+  auto client_transport_factory = TcpTransportFactory::New(io_service);
+  boost::asio::ip::tcp::endpoint endpoint(
+      boost::asio::ip::address::from_string("127.0.0.1"), 51894);
+
+  bool called = false;
+  server_transport_factory->StartAccept(endpoint, TRANSPORT_CALLBACK(&) {
+    BOOST_TEST((boost::asio::error::get_ssl_category() == ec.category()));
+    called = true;
+    return false;
+  });
+
+  client_transport_factory->StartConnect(endpoint, TRANSPORT_CALLBACK(&) {
+    transport->StartClose();
+  });
+
+  io_service->run();
+  BOOST_TEST(called);
 }
 
 BOOST_AUTO_TEST_SUITE_END();

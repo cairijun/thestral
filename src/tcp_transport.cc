@@ -74,6 +74,7 @@ void TcpTransportFactoryImpl::StartAccept(EndpointType endpoint,
       std::make_shared<ip::tcp::acceptor>(*io_service_ptr_, endpoint);
   acceptor->set_option(ip::tcp::no_delay(true));
   acceptor->set_option(ip::tcp::socket::reuse_address(true));
+  last_acceptor_ = acceptor;
   DoAccept(acceptor, callback);
 }
 

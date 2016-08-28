@@ -27,6 +27,10 @@
 
 namespace thestral {
 
+namespace testing {
+class TestTcpTransportFactory;
+}
+
 /// Base class of transport on plain TCP protocol.
 class TcpTransport : public TransportBase {
  public:
@@ -49,7 +53,25 @@ class TcpTransportFactory
 
   static std::shared_ptr<TcpTransportFactory> New(
       const std::shared_ptr<boost::asio::io_service>& io_service_ptr);
+
+ protected:
+  friend class testing::TestTcpTransportFactory;
+
+  /// A weak pointer to the last created acceptor **for testing purposes only**.
+  std::weak_ptr<boost::asio::ip::tcp::acceptor> last_acceptor_;
 };
+
+namespace testing {
+/// This class is a friend of TcpTransportFactory and tests that need to access
+/// private/protected members of TcpTransportFactory objects should use it as a
+/// fixture.
+struct TestTcpTransportFactory {
+  static std::weak_ptr<boost::asio::ip::tcp::acceptor> GetLastAcceptor(
+      const std::shared_ptr<TcpTransportFactory>& transport_factory) {
+    return transport_factory->last_acceptor_;
+  }
+};
+}  // namespace testing
 
 namespace impl {
 

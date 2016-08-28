@@ -67,9 +67,10 @@ void MockTransport::StartClose(const CloseCallbackType& callback) {
 }
 
 std::shared_ptr<MockTransport> MockTcpTransportFactory::NewMockTransport(
-    const std::string& read_buf) {
+    const std::string& read_buf, const ec_type& ec) {
   auto transport = MockTransport::New(io_service_ptr_, read_buf);
   transports_.push(transport);
+  errors_.push(ec);
   return transport;
 }
 
@@ -93,8 +94,10 @@ void MockTcpTransportFactory::AcceptOne(const AcceptCallbackType& callback) {
         nullptr);
   } else {
     auto transport = transports_.front();
+    auto error = errors_.front();
     transports_.pop();
-    if (callback(ec_type(), transport)) {
+    errors_.pop();
+    if (callback(error, transport)) {
       io_service_ptr_->post(
           std::bind(&MockTcpTransportFactory::AcceptOne, this, callback));
     }

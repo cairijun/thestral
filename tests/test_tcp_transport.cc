@@ -136,6 +136,25 @@ BOOST_AUTO_TEST_CASE(test_accept) {
   }
 }
 
+BOOST_FIXTURE_TEST_CASE(test_accept_error, testing::TestTcpTransportFactory) {
+  boost::asio::ip::tcp::endpoint endpoint(
+      boost::asio::ip::address::from_string("127.0.0.1"), 47999);
+  auto io_service = std::make_shared<boost::asio::io_service>();
+  auto factory = TcpTransportFactory::New(io_service);
+
+  bool called = false;
+  factory->StartAccept(endpoint, TRANSPORT_CALLBACK(&) {
+    BOOST_CHECK_EQUAL(boost::asio::error::operation_aborted, ec.value());
+    called = true;
+    return true;
+  });
+
+  GetLastAcceptor(factory).lock()->close();
+
+  io_service->run();
+  BOOST_TEST(called);
+}
+
 BOOST_AUTO_TEST_SUITE_END();
 
 }  // namespace thestral

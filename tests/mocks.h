@@ -66,7 +66,7 @@ class MockTcpTransportFactory : public TcpTransportFactory {
       : io_service_ptr_(io_service_ptr) {}
 
   std::shared_ptr<MockTransport> NewMockTransport(
-      const std::string& read_buf = "");
+      const std::string& read_buf = "", const ec_type& ec = ec_type());
   EndpointType PopEndpoint();
 
   void StartAccept(EndpointType endpoint,
@@ -86,7 +86,11 @@ class MockTcpTransportFactory : public TcpTransportFactory {
 
   std::shared_ptr<boost::asio::io_service> io_service_ptr_;
   std::queue<std::shared_ptr<MockTransport>> transports_;
+  std::queue<ec_type> errors_;
   std::queue<EndpointType> endpoints_;
+
+ public:
+  decltype(transports_) & GetTransports() { return transports_; }
 };
 
 class MockUpstreamFactory : public UpstreamFactoryBase {

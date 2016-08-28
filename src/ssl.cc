@@ -59,6 +59,7 @@ void SslTransportFactoryImpl::StartAccept(EndpointType endpoint,
       std::make_shared<ip::tcp::acceptor>(*io_service_ptr_, endpoint);
   acceptor->set_option(ip::tcp::no_delay(true));
   acceptor->set_option(ip::tcp::socket::reuse_address(true));
+  last_acceptor_ = acceptor;
   DoAccept(acceptor, callback);
 }
 
@@ -80,6 +81,7 @@ void SslTransportFactoryImpl::DoAccept(
           // accept() call failed. impossible to proceed.
           transport->StartClose();
           callback(ec, nullptr);
+          return;
         } else {
           self->LOG.Debug(
               "one connection accepted, start performing ssl handshake");
@@ -100,7 +102,6 @@ void SslTransportFactoryImpl::DoAccept(
                     "ssl handshake succeeded, remote endpoint: %s",
                     transport->GetRemoteAddress().ToString().c_str());
               }
-              // the callback should distinguish ssl_error from others
               if (callback(ec, ec ? nullptr : transport)) {
                 self->DoAccept(acceptor, callback);
               } else {

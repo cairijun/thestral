@@ -75,6 +75,27 @@ BOOST_AUTO_TEST_CASE(test_request) {
   BOOST_CHECK_EQUAL(19278, listened_addr.port());
 }
 
+BOOST_AUTO_TEST_CASE(test_continue_accepting_on_error) {
+  auto io_service = std::make_shared<boost::asio::io_service>();
+
+  auto downstream_transport_factory =
+      std::make_shared<testing::MockTcpTransportFactory>(io_service);
+  downstream_transport_factory->NewMockTransport(
+      "", boost::asio::error::make_error_code(
+              boost::asio::error::basic_errors::network_reset));
+  downstream_transport_factory->NewMockTransport();
+
+  auto upstream_factory =
+      std::make_shared<testing::MockUpstreamFactory>(io_service);
+
+  auto socks_server = SocksTcpServer::New(
+      "127.0.0.1", 19279, downstream_transport_factory, upstream_factory);
+  socks_server->Start();
+  io_service->run();
+
+  BOOST_CHECK_EQUAL(0, downstream_transport_factory->GetTransports().size());
+}
+
 BOOST_AUTO_TEST_SUITE_END();
 
 }  // namespace socks
