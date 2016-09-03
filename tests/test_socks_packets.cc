@@ -55,13 +55,13 @@ BOOST_AUTO_TEST_CASE(test_auth_method_list_create) {
   bool called = false;
   AuthMethodList::StartCreateFrom(transport, PACKET_CALLBACK(AuthMethodList) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(0x5, data.version);
     CHECK_SEQUENCES_EQUAL({AuthMethod::kNoAuth}, data.methods);
   });
 
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 }
 
 BOOST_AUTO_TEST_CASE(test_auth_method_list_write) {
@@ -73,12 +73,12 @@ BOOST_AUTO_TEST_CASE(test_auth_method_list_write) {
   bool called = false;
   packet.StartWriteTo(transport, PACKET_CALLBACK(size_t) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(3, data);
   });
 
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
   BOOST_CHECK_EQUAL(s, transport->write_buf);
 }
 
@@ -96,35 +96,35 @@ BOOST_AUTO_TEST_CASE(test_socks_address_create) {
   bool called = false;
   SocksAddress::StartCreateFrom(transport, PACKET_CALLBACK(SocksAddress) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(AddressType::kIPv4, data.type);
     BOOST_CHECK_EQUAL(ipv4, data.host);
     BOOST_CHECK_EQUAL(13398, data.port);
   });
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 
   called = false;
   SocksAddress::StartCreateFrom(transport, PACKET_CALLBACK(SocksAddress) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(AddressType::kIPv6, data.type);
     BOOST_CHECK_EQUAL(ipv6, data.host);
     BOOST_CHECK_EQUAL(13398, data.port);
   });
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 
   called = false;
   SocksAddress::StartCreateFrom(transport, PACKET_CALLBACK(SocksAddress) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(AddressType::kDomainName, data.type);
     BOOST_CHECK_EQUAL(domain, data.host);
     BOOST_CHECK_EQUAL(13398, data.port);
   });
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 }
 
 BOOST_AUTO_TEST_CASE(test_socks_address_write) {
@@ -142,11 +142,11 @@ BOOST_AUTO_TEST_CASE(test_socks_address_write) {
   bool called = false;
   packet.StartWriteTo(transport, PACKET_CALLBACK(size_t) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(7, data);
   });
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 
   packet.type = AddressType::kIPv6;
   packet.host = ipv6;
@@ -154,11 +154,11 @@ BOOST_AUTO_TEST_CASE(test_socks_address_write) {
   called = false;
   packet.StartWriteTo(transport, PACKET_CALLBACK(size_t) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(19, data);
   });
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 
   packet.type = AddressType::kDomainName;
   packet.host = domain;
@@ -166,11 +166,11 @@ BOOST_AUTO_TEST_CASE(test_socks_address_write) {
   called = false;
   packet.StartWriteTo(transport, PACKET_CALLBACK(size_t) {
     called = true;
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(domain.size() + 4, data);
   });
   RunAndReset();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 
   BOOST_CHECK_EQUAL('\x01' + ipv4 + "\x34\x56" + '\x04' + ipv6 + "\x34\x56" +
                         '\x03' + '\x0e' + domain + "\x34\x56",

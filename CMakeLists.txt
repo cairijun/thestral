@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.4)
-project(thestral CXX)
+cmake_minimum_required(VERSION 3.3)
+project(thestral C CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
@@ -17,6 +17,9 @@ if(BUILD_TESTING AND ENABLE_COVERAGE)
   set(CMAKE_CXX_FLAGS "--coverage -O0")
 endif()
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 set(BOOST_COMPONENTS system)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
@@ -28,7 +31,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 set(Boost_USE_MULTITHREADED ON)
-find_package(Boost 1.60.0 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+find_package(Boost 1.58.0 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 
 if(APPLE)
   list(INSERT CMAKE_PREFIX_PATH 0 /usr/local/opt/openssl)
@@ -55,7 +58,7 @@ set(SRCS
 
 add_library(thestral-lib ${SRCS})
 target_link_libraries(thestral-lib
-    ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES})
+    ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} Threads::Threads)
 
 add_executable(thestral src/main.cc)
 target_link_libraries(thestral thestral-lib)

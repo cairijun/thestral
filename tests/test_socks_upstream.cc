@@ -69,27 +69,27 @@ BOOST_AUTO_TEST_CASE(test_request) {
     upstream->StartRequest(
         p3.body, [&](const ec_type& ec,
                      const std::shared_ptr<TransportBase>& transport) {
-          BOOST_TEST(!ec);
+          BOOST_CHECK(!ec);
           auto local_addr = transport->GetLocalAddress();
           BOOST_CHECK_EQUAL(Address(p4.body), local_addr);
 
           transport->StartWrite(data_to_upstream, [&, transport](
                                                       const ec_type& ec,
                                                       size_t n_bytes) {
-            BOOST_TEST(!ec);
+            BOOST_CHECK(!ec);
             BOOST_CHECK_EQUAL(data_to_upstream.size(), n_bytes);
 
             auto read_buf = std::make_shared<std::array<char, 64>>();
             transport->StartRead(
                 *read_buf, data_to_downstream.size(),
                 [&, transport, read_buf](const ec_type& ec, size_t n_bytes) {
-                  BOOST_TEST(!ec);
+                  BOOST_CHECK(!ec);
                   BOOST_CHECK_EQUAL(data_to_downstream.size(), n_bytes);
                   read_buf->at(n_bytes) = '\0';
                   BOOST_CHECK_EQUAL(data_to_downstream, read_buf->data());
 
                   transport->StartClose([&](const ec_type& ec) {
-                    BOOST_TEST(!ec);
+                    BOOST_CHECK(!ec);
                     --n_clients;
                   });
                 });
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(test_request) {
 
   io_service->run();
 
-  BOOST_TEST(n_clients == 0);
+  BOOST_CHECK_EQUAL(n_clients, 0);
   auto listened_on = transport_factory->PopEndpoint();
   BOOST_CHECK_EQUAL("127.0.0.1", listened_on.address().to_string());
   BOOST_CHECK_EQUAL(57819, listened_on.port());

@@ -50,27 +50,27 @@ BOOST_FIXTURE_TEST_CASE(test_connect, WithEchoServer) {
 
   bool done = false;
   factory->StartConnect(server.GetEndpoint(), TRANSPORT_CALLBACK(&) {
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
     transport->StartWrite(data, BYTES_CALLBACK(&, transport) {
-      BOOST_TEST(!ec);
+      BOOST_CHECK(!ec);
       BOOST_CHECK_EQUAL(data.size(), n_bytes);
 
       // read the first 10 bytes
       transport->StartRead(read_buf, 10, BYTES_CALLBACK(&, transport) {
-        BOOST_TEST(!ec);
+        BOOST_CHECK(!ec);
         BOOST_CHECK_EQUAL(10, n_bytes);
 
         // short read
         transport->StartRead(
             read_buf + n_bytes, sizeof(read_buf) - n_bytes,
             BYTES_CALLBACK(&, transport) {
-              BOOST_TEST(!ec);
+              BOOST_CHECK(!ec);
               BOOST_CHECK_EQUAL(data.size() - 10, n_bytes);
               read_buf[data.size()] = '\0';
               BOOST_CHECK_EQUAL(data, read_buf);
               transport->StartClose(
                   [&](const ec_type& ec) {  // set done after closed
-                    BOOST_TEST(!ec);
+                    BOOST_CHECK(!ec);
                     done = true;
                   });
             },
@@ -80,7 +80,7 @@ BOOST_FIXTURE_TEST_CASE(test_connect, WithEchoServer) {
   });
 
   io_service->run();
-  BOOST_TEST(done);
+  BOOST_CHECK(done);
 }
 
 BOOST_AUTO_TEST_CASE(test_accept) {
@@ -95,10 +95,10 @@ BOOST_AUTO_TEST_CASE(test_accept) {
     transport->StartRead(
         *buf,
         BYTES_CALLBACK(transport, buf) {
-          BOOST_TEST(!ec);
+          BOOST_CHECK(!ec);
           // write back the same data
           transport->StartWrite(*buf, n_bytes, BYTES_CALLBACK(transport) {
-            BOOST_TEST(!ec);
+            BOOST_CHECK(!ec);
             transport->StartClose();  // now close and drop this connection
           });
         },
@@ -152,7 +152,7 @@ BOOST_FIXTURE_TEST_CASE(test_accept_error, testing::TestTcpTransportFactory) {
   GetLastAcceptor(factory).lock()->close();
 
   io_service->run();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 }
 
 BOOST_AUTO_TEST_SUITE_END();

@@ -1,4 +1,4 @@
-find_package(Boost 1.60.0 REQUIRED COMPONENTS unit_test_framework)
+find_package(Boost 1.58.0 REQUIRED COMPONENTS unit_test_framework)
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${${CMAKE_PROJECT_NAME}_INCLUDE_DIR}
@@ -21,7 +21,7 @@ if(UNIX)
     target_link_libraries(e2e_tests thestral-lib ${Boost_LIBRARIES})
     add_test(
         NAME e2e
-        COMMAND e2e_tests -l test_suite -x -r short -- $<TARGET_FILE:thestral>)
+        COMMAND e2e_tests -l test_suite -x -r short -- --thestral_bin $<TARGET_FILE:thestral>)
 
     file(GLOB TEST_CONFIG_FILES *.conf)
     file(COPY ${TEST_CONFIG_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

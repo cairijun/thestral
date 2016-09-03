@@ -62,14 +62,14 @@ BOOST_AUTO_TEST_CASE(test_relay) {
         Address::FromAsioEndpoint(GetEndpoint()),
         [=, &n_pending](const ec_type& ec,
                         const std::shared_ptr<TransportBase>& transport) {
-          BOOST_TEST(!ec);
+          BOOST_CHECK(!ec);
 
           auto read_buf = std::make_shared<BufferType>();
           transport->StartRead(
               *read_buf, [=, &n_pending](const ec_type& ec, size_t n_bytes) {
-                BOOST_TEST(!ec);
+                BOOST_CHECK(!ec);
                 BOOST_CHECK_EQUAL(read_buf->size(), n_bytes);
-                BOOST_TEST((*write_buf == *read_buf));
+                BOOST_CHECK((*write_buf == *read_buf));
 
                 transport->StartClose(
                     [&n_pending](const ec_type& ec) { --n_pending; });
@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(test_relay) {
 
           transport->StartWrite(
               *write_buf, [=, &n_pending](const ec_type& ec, size_t n_bytes) {
-                BOOST_TEST(!ec);
+                BOOST_CHECK(!ec);
                 BOOST_CHECK_EQUAL(write_buf->size(), n_bytes);
               });
         });

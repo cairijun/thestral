@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -39,13 +40,9 @@ static constexpr const char* kConfigFiles[] = {"example1.conf",
 template <int CONFIG_FILE_ID>
 struct WithThestralServer {
   WithThestralServer() {
-    std::string thestral_bin;
     auto& master_test_suite = boost::unit_test::framework::master_test_suite();
-    if (master_test_suite.argc < 2) {
-      thestral_bin = "thestral";
-    } else {
-      thestral_bin = master_test_suite.argv[1];
-    }
+    std::string thestral_bin(
+        GetThestralBinPath(master_test_suite.argc, master_test_suite.argv));
 
     if ((server_pid_ = fork())) {
       // parent process
@@ -70,6 +67,18 @@ struct WithThestralServer {
   }
 
  private:
+  static std::string GetThestralBinPath(int argc, char** argv) {
+    bool is_next = false;
+    while (argc--) {
+      if (is_next) {
+        return *argv;
+      } else {
+        is_next = strncmp("--thestral_bin", *argv++, 15) == 0;
+      }
+    }
+    return "thestral";
+  }
+
   pid_t server_pid_;
 };
 

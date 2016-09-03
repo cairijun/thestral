@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(test_request) {
       ipv4,
       [&](const ec_type& ec, const std::shared_ptr<TransportBase>& transport) {
         called_ipv4 = true;
-        BOOST_TEST(!ec);
+        BOOST_CHECK(!ec);
         BOOST_CHECK_EQUAL(transport_1, transport);
       });
 
@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(test_request) {
   upstream->StartRequest(
       ipv6, [&](const ec_type& ec, std::shared_ptr<TransportBase> transport) {
         called_ipv6 = true;
-        BOOST_TEST(!ec);
+        BOOST_CHECK(!ec);
         BOOST_CHECK_EQUAL(transport_2, transport);
       });
 
@@ -74,15 +74,15 @@ BOOST_AUTO_TEST_CASE(test_request) {
   upstream->StartRequest(
       domain, [&](const ec_type& ec, std::shared_ptr<TransportBase> transport) {
         called_domain = true;
-        BOOST_TEST(!ec);
+        BOOST_CHECK(!ec);
         BOOST_CHECK_EQUAL(transport_3, transport);
       });
 
   io_service->run();
 
-  BOOST_TEST(called_ipv4);
-  BOOST_TEST(called_ipv6);
-  BOOST_TEST(called_domain);
+  BOOST_CHECK(called_ipv4);
+  BOOST_CHECK(called_ipv6);
+  BOOST_CHECK(called_domain);
 
   auto endpoint_1 = transport_factory->PopEndpoint();
   auto endpoint_2 = transport_factory->PopEndpoint();

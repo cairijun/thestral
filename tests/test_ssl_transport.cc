@@ -73,19 +73,19 @@ BOOST_AUTO_TEST_CASE(test_ssl_transport) {
 
   bool accept_done = false;
   server_transport_factory->StartAccept(endpoint, TRANSPORT_CALLBACK(&) {
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
 
     auto read_buf = std::make_shared<std::array<char, 64>>();
     transport->StartRead(
         *read_buf, data_to_server.size(),
         BYTES_CALLBACK(&, read_buf, transport) {
-          BOOST_TEST(!ec);
+          BOOST_CHECK(!ec);
           BOOST_CHECK_EQUAL(data_to_server.size(), n_bytes);
           read_buf->at(n_bytes) = '\0';
           BOOST_CHECK_EQUAL(data_to_server, read_buf->data());
 
           transport->StartWrite(data_to_client, BYTES_CALLBACK(&, transport) {
-            BOOST_TEST(!ec);
+            BOOST_CHECK(!ec);
             BOOST_CHECK_EQUAL(data_to_client.size(), n_bytes);
 
             transport->StartClose(
@@ -98,17 +98,17 @@ BOOST_AUTO_TEST_CASE(test_ssl_transport) {
 
   bool connect_done = false;
   client_transport_factory->StartConnect(endpoint, TRANSPORT_CALLBACK(&) {
-    BOOST_TEST(!ec);
+    BOOST_CHECK(!ec);
 
     transport->StartWrite(data_to_server, BYTES_CALLBACK(&, transport) {
-      BOOST_TEST(!ec);
+      BOOST_CHECK(!ec);
       BOOST_CHECK_EQUAL(data_to_server.size(), n_bytes);
 
       auto read_buf = std::make_shared<std::array<char, 64>>();
       transport->StartRead(
           *read_buf, data_to_client.size(),
           BYTES_CALLBACK(&, read_buf, transport) {
-            BOOST_TEST(!ec);
+            BOOST_CHECK(!ec);
             BOOST_CHECK_EQUAL(data_to_client.size(), n_bytes);
             read_buf->at(n_bytes) = '\0';
             BOOST_CHECK_EQUAL(data_to_client, read_buf->data());
@@ -120,8 +120,8 @@ BOOST_AUTO_TEST_CASE(test_ssl_transport) {
   });
 
   io_service->run();
-  BOOST_TEST(accept_done);
-  BOOST_TEST(connect_done);
+  BOOST_CHECK(accept_done);
+  BOOST_CHECK(connect_done);
 }
 
 BOOST_FIXTURE_TEST_CASE(test_accept_error, testing::TestTcpTransportFactory) {
@@ -140,7 +140,7 @@ BOOST_FIXTURE_TEST_CASE(test_accept_error, testing::TestTcpTransportFactory) {
   GetLastAcceptor(factory).lock()->close();
 
   io_service->run();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 }
 
 BOOST_AUTO_TEST_CASE(test_handshake_error) {
@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(test_handshake_error) {
 
   bool called = false;
   server_transport_factory->StartAccept(endpoint, TRANSPORT_CALLBACK(&) {
-    BOOST_TEST((boost::asio::error::get_ssl_category() == ec.category()));
+    BOOST_CHECK((boost::asio::error::get_ssl_category() == ec.category()));
     called = true;
     return false;
   });
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(test_handshake_error) {
       endpoint, TRANSPORT_CALLBACK(&) { transport->StartClose(); });
 
   io_service->run();
-  BOOST_TEST(called);
+  BOOST_CHECK(called);
 }
 
 BOOST_AUTO_TEST_CASE(test_verify_host) {
@@ -174,20 +174,20 @@ BOOST_AUTO_TEST_CASE(test_verify_host) {
 
   bool server_called = false;
   server_transport_factory->StartAccept(endpoint, TRANSPORT_CALLBACK(&) {
-    BOOST_TEST((boost::asio::error::get_ssl_category() == ec.category()));
+    BOOST_CHECK((boost::asio::error::get_ssl_category() == ec.category()));
     server_called = true;
     return false;
   });
 
   bool client_called = false;
   client_transport_factory->StartConnect(endpoint, TRANSPORT_CALLBACK(&) {
-    BOOST_TEST((boost::asio::error::get_ssl_category() == ec.category()));
+    BOOST_CHECK((boost::asio::error::get_ssl_category() == ec.category()));
     client_called = true;
   });
 
   io_service->run();
-  BOOST_TEST(server_called);
-  BOOST_TEST(client_called);
+  BOOST_CHECK(server_called);
+  BOOST_CHECK(client_called);
 }
 
 BOOST_AUTO_TEST_SUITE_END();
